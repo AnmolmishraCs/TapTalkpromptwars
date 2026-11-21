@@ -76,3 +76,13 @@ test('Hindi benchmark covers every version and task', () => {
   const res = bench('hi')
   assert.ok(Object.values(res).every(rows => rows.length === TASKS.hi.length))
 })
+
+test('personal names are suggested with their own spelling', () => {
+  const sugs = createEngine('B', [], 'en', ['Riya']).suggest('call Ri')
+  assert.ok(sugs.some(s => s.insert === 'ya '))
+})
+
+test('Roman Hindi gets its own suggestions', () => {
+  const sugs = createEngine('B', [], 'hr').suggest('mujhe gh')
+  assert.ok(sugs.some(s => s.insert === 'ar jaana hai'))
+})

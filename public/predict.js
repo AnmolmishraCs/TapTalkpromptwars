@@ -1,45 +1,20 @@
-export const CORPUS = {
-  en: [
-    'I want to go home', 'I want to eat', 'I want some water', 'I want to talk to you',
-    'I want to watch a movie', 'I need help', 'I need to use the bathroom',
-    'I need to finish my homework', 'I am hungry', 'I am tired', 'I am in pain',
-    'I am sorry', 'I am ready to go', 'I feel sick', 'I feel happy', 'I do not understand',
-    'I love you', 'I would like to go outside', 'I will be there in five minutes',
-    'Can you help me please', 'Can you wait a minute', 'Can you call my mother',
-    'Can we go to the park', 'Can I have some tea please', 'Please turn on the light',
-    'Please turn off the TV', 'Please say that again', 'Please speak slowly',
-    'Please give me my phone', 'Thank you very much', 'How are you today', 'What time is it',
-    'Where is the doctor', 'Good morning', 'Good night', 'See you tomorrow', 'Yes please',
-    'No thank you', 'Let me think for a moment', 'That is very funny',
-  ],
-  hi: [
-    'मुझे घर जाना है', 'मुझे खाना खाना है', 'मुझे पानी चाहिए', 'मुझे आपसे बात करनी है',
-    'मुझे फ़िल्म देखनी है', 'मुझे मदद चाहिए', 'मुझे शौचालय जाना है',
-    'मुझे अपना होमवर्क पूरा करना है', 'मुझे भूख लगी है', 'मुझे थकान लग रही है',
-    'मुझे दर्द हो रहा है', 'मुझे माफ़ कीजिए', 'चलिए, मैं तैयार हूँ', 'मुझे बीमार लग रहा है',
-    'मैं खुश हूँ', 'मुझे समझ नहीं आया', 'मुझे आपसे बहुत प्यार है', 'मुझे बाहर जाना है',
-    'पाँच मिनट में मिलते हैं', 'क्या आप मेरी मदद कर सकते हैं', 'क्या आप एक मिनट रुक सकते हैं',
-    'क्या आप मेरी माँ को फ़ोन कर सकते हैं', 'क्या हम पार्क चल सकते हैं',
-    'क्या मुझे चाय मिल सकती है', 'कृपया लाइट जला दीजिए', 'कृपया टीवी बंद कर दीजिए',
-    'कृपया दोबारा कहिए', 'कृपया धीरे बोलिए', 'कृपया मेरा फ़ोन दीजिए', 'बहुत धन्यवाद',
-    'आप कैसे हैं', 'क्या समय हुआ है', 'डॉक्टर कहाँ हैं', 'सुप्रभात', 'शुभ रात्रि',
-    'कल मिलते हैं', 'हाँ कृपया', 'नहीं धन्यवाद', 'मुझे एक पल सोचने दीजिए', 'यह बहुत मज़ेदार है',
-  ],
-}
+import { EN, HI } from './phrases.js'
+
+export const CORPUS = { en: EN, hi: HI.map(p => p[0]), hr: HI.map(p => p[1]) }
 
 export const TASKS = {
   en: [
     { name: 'Go home', final: 'I want to go home after dinner.' },
     { name: 'Wait', final: 'Can you wait five minutes? I need to finish this.' },
     { name: 'Unusual', final: 'The pigeon on the balcony keeps staring at me.' },
-    { name: 'Change of mind', final: 'I want to go outside.', detour: 'I want to eat pizza' },
+    { name: 'Change of mind', final: 'I want to visit my cousin tomorrow.', detour: 'I want to eat pizza' },
     { name: 'Ignore all', final: 'Zebras mumble quietly in my kitchen.', accept: false },
   ],
   hi: [
     { name: 'Go home', final: 'मुझे खाने के बाद घर जाना है।' },
     { name: 'Wait', final: 'क्या आप पाँच मिनट रुक सकते हैं? मुझे यह खत्म करना है।' },
     { name: 'Unusual', final: 'बालकनी पर कबूतर मुझे घूर रहा है।' },
-    { name: 'Change of mind', final: 'मुझे बाहर जाना है।', detour: 'मुझे पिज़्ज़ा खाना है' },
+    { name: 'Change of mind', final: 'मुझे अपने चचेरे भाई से मिलना है।', detour: 'मुझे पिज़्ज़ा खाना है' },
     { name: 'Ignore all', final: 'ज़ेबरा रसोई में चुपचाप बड़बड़ाते हैं।', accept: false },
   ],
 }
@@ -83,14 +58,14 @@ function build(sents) {
 const top = (map, keep = () => true) =>
   [...map].filter(([w]) => keep(w)).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([w]) => w)
 
-function words(text, { uni, bi }) {
+function words(text, { uni, bi, forms }) {
   const last = /\S$/.test(text) ? text.match(/\S+$/)[0].toLowerCase() : ''
   const starter = !last && /^\s*$|[.?!।]\s*$/.test(text)
   const pick = last
     ? top(uni, w => w.startsWith(last) && w !== last)
     : top(bi.get(starter ? undefined : tokens(text).pop()) || uni)
   return pick.map(w => {
-    let word = w.replace(/^i\b/, 'I')
+    let word = forms.get(w) || w.replace(/^i\b/, 'I')
     if (starter) word = word[0].toUpperCase() + word.slice(1)
     return { insert: (last ? word.slice(last.length) : word) + ' ', label: word, kind: 'word', strong: false }
   })
@@ -114,22 +89,30 @@ function phrases(text, sents) {
       const i = at(low, tail)
       const insert = i < 0 ? '' : s.slice(i + tail.length)
       if (insert.trim()) {
-        out.push({ insert, label: '…' + insert.trim(), kind: 'phrase', strong: tail.trim().length >= 6, score: w * tail.length })
+        const partial = /\S$/.test(text) && !insert.startsWith(' ') ? text.match(/\S+$/)[0] : ''
+        out.push({ insert, label: partial + insert.trim(), kind: 'phrase', strong: tail.trim().length >= 6, score: w * tail.length })
         break
       }
     }
   }
-  return out.sort((a, b) => b.score - a.score)
+  const merged = new Map()
+  for (const o of out) {
+    const seen = merged.get(o.insert)
+    if (seen) seen.score += o.score
+    else merged.set(o.insert, o)
+  }
+  return [...merged.values()].sort((a, b) => b.score - a.score)
 }
 
-export function createEngine(mode = 'B', past = [], lang = 'en') {
+export function createEngine(mode = 'B', past = [], lang = 'en', names = []) {
   const personal = mode === 'C' || mode === 'D'
   let trust = 0.5
   let sents
   let index
   const rebuild = () => {
-    sents = [...CORPUS[lang].map(s => [s, 1]), ...(personal ? past.map(s => [s, 3]) : [])]
-    index = build(sents)
+    sents = [...CORPUS[lang].map(s => [s, 1]), ...names.map(n => [n, 3]), ...(personal ? past.map(s => [s, 3]) : [])]
+    const forms = new Map(names.flatMap(n => n.match(/[\p{L}\p{M}']+/gu) || []).map(w => [w.toLowerCase(), w]))
+    index = { ...build(sents), forms }
   }
   rebuild()
 
