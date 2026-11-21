@@ -5,45 +5,46 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>TapTalk</title>
   <meta name="description" content="Type anything and speak it aloud. Suggestions help, but you decide every word.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap">
   <link rel="stylesheet" href="style.css">
   <script type="module" src="app.js"></script>
 </head>
-<body data-mode="B">
+<body>
   <header>
     <h1>TapTalk</h1>
-    <p>Say anything. Tap less.</p>
     <div class="langs" id="langs" role="group" aria-label="Language"></div>
-    <div class="modes" id="modes" role="group" aria-label="Suggestion style"></div>
   </header>
   <main>
+    <section class="fav" aria-label="My favorite">
+      <button id="fav" class="fav-say" type="button"></button>
+      <button id="unfav" class="round" type="button" aria-label="Remove favorite">✕</button>
+    </section>
     <section class="compose" aria-label="Compose">
       <div class="say">
         <svg id="mascot" class="mascot" viewBox="0 0 120 100" aria-hidden="true">
           <path d="M8 100C8 40 38 4 60 4s52 36 52 96z" fill="currentColor"/>
           <circle cx="44" cy="52" r="12" fill="#fff"/><circle cx="76" cy="52" r="12" fill="#fff"/>
-          <circle cx="46" cy="54" r="6" fill="#1b1340"/><circle cx="78" cy="54" r="6" fill="#1b1340"/>
-          <ellipse class="mouth" cx="60" cy="80" rx="9" ry="4" fill="#1b1340"/>
+          <circle cx="46" cy="54" r="6" fill="#111"/><circle cx="78" cy="54" r="6" fill="#111"/>
+          <ellipse class="mouth" cx="60" cy="80" rx="9" ry="4" fill="#111"/>
         </svg>
-        <div id="say" class="sentence" role="textbox" aria-readonly="true" aria-label="Your sentence" tabindex="0"></div>
+        <textarea id="say" rows="3" aria-label="Your sentence" enterkeyhint="send" autocomplete="off" autocapitalize="sentences" spellcheck="false"></textarea>
       </div>
       <div id="sugs" class="sugs" aria-label="Suggestions"></div>
       <div class="actions">
         <button id="speak" class="speak" type="button">Speak</button>
+        <button id="star" type="button">★ Favorite</button>
         <button id="delword" type="button">Delete word</button>
-        <button id="wipe" type="button">Clear all</button>
+        <button id="wipe" type="button">Clear</button>
+        <button id="big" type="button" aria-pressed="false">Big keys</button>
       </div>
-      <p id="stats" aria-live="polite"></p>
+      <p id="note" role="status"></p>
     </section>
-    <section class="board" aria-label="Keyboard"><div id="keys"></div></section>
+    <section class="board" id="board" aria-label="Keyboard" hidden><div id="keys"></div></section>
     <section class="recent" aria-labelledby="rh">
       <h2 id="rh">Spoken before</h2>
       <div id="recent"></div>
-    </section>
-    <section class="lab" aria-labelledby="lh">
-      <h2 id="lh">Does prediction save effort?</h2>
-      <p>Runs 5 tasks through all four suggestion styles and counts every key and tap.</p>
-      <button id="run" type="button">Run the 5 tasks</button>
-      <div id="bench"></div>
     </section>
   </main>
 </body>

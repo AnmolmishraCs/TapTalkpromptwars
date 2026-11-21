@@ -1,11 +1,19 @@
-import { createEngine, bench, TASKS } from './predict.js'
+import { createEngine } from './predict.js'
 
 const $ = id => document.getElementById(id)
-const MODES = { A: 'Words', B: 'Phrases', C: 'Personal', D: 'Adaptive' }
 const LANGS = { en: 'English', hi: 'हिन्दी' }
+const MODE = ['A', 'B', 'C', 'D'].find(v => v === new URLSearchParams(location.search).get('v')?.toUpperCase()) || 'D'
 const T = {
-  en: { ph: 'What do you want to say?', speak: 'Speak', del: 'Delete word', wipe: 'Clear all', recent: 'Spoken before', none: 'Sentences you speak will show up here.', space: 'space', voice: 'en-IN' },
-  hi: { ph: 'आप क्या कहना चाहते हैं?', speak: 'बोलें', del: 'शब्द हटाएँ', wipe: 'सब मिटाएँ', recent: 'पहले बोले गए', none: 'आप जो बोलेंगे वह यहाँ दिखेगा।', space: 'स्पेस', voice: 'hi-IN' },
+  en: {
+    ph: 'What do you want to say?', speak: 'Speak', star: '★ Favorite', del: 'Delete word', wipe: 'Clear', big: 'Big keys',
+    recent: 'Spoken before', none: 'Sentences you speak will show up here.', space: 'space',
+    favLabel: 'My favorite', favHint: 'Type something, tap ★ Favorite, and it lives here, one tap away.',
+  },
+  hi: {
+    ph: 'आप क्या कहना चाहते हैं?', speak: 'बोलें', star: '★ पसंदीदा', del: 'शब्द हटाएँ', wipe: 'मिटाएँ', big: 'बड़े बटन',
+    recent: 'पहले बोले गए', none: 'आप जो बोलेंगे वह यहाँ दिखेगा।', space: 'स्पेस',
+    favLabel: 'मेरा पसंदीदा', favHint: 'कुछ लिखें और ★ दबाएँ। वह यहाँ एक टैप पर मिलेगा।',
+  },
 }
 const LAYOUT = {
   en: ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'].map(r => [...r]),
@@ -16,34 +24,29 @@ const LAYOUT = {
 }
 const EXTRA = { en: [',', '.', '?', "'"], hi: [',', '।', '?'] }
 
-const load = () => {
+const get = (key, fallback) => {
   try {
-    return JSON.parse(localStorage.getItem('taptalk-history')) || []
+    return JSON.parse(localStorage.getItem(key)) ?? fallback
   } catch {
-    return []
+    return fallback
   }
 }
-const save = list => {
+const put = (key, value) => {
   try {
-    localStorage.setItem('taptalk-history', JSON.stringify(list.slice(-200)))
+    localStorage.setItem(key, JSON.stringify(value))
   } catch {}
 }
 
-function fresh() {
-  return { start: 0, keys: 0, taps: 0, corrections: 0, accepted: 0, ignored: 0 }
-}
-
-const history = load()
+const ta = $('say')
+const history = get('taptalk-history', [])
+let favorite = get('taptalk-fav', '')
 let engine
 let lang = 'en'
-let mode = 'B'
-let text = ''
-let m = fresh()
+let prevBefore = ''
 
-const mine = () => history.filter(h => /[\u0900-\u097F]/.test(h) === (lang === 'hi'))
-const begin = () => {
-  m.start ||= performance.now()
-}
+const isHi = s => /[\u0900-\u097F]/.test(s)
+const mine = () => history.filter(h => isHi(h) === (lang === 'hi'))
+const before = () => ta.value.slice(0, ta.selectionStart)
 
 const button = (label, onclick, cls = '', aria = '') => {
   const b = document.createElement('button')
@@ -62,96 +65,89 @@ const row = (...btns) => {
   return d
 }
 
-function render() {
-  const caret = document.createElement('span')
-  caret.className = 'caret'
-  $('say').replaceChildren(text, caret)
-  $('say').classList.toggle('empty', !text)
-  $('sugs').replaceChildren(...engine.suggest(text).map(s => button(s.label, () => accept(s))))
+const span = (cls, text) => {
+  const s = document.createElement('span')
+  s.className = cls
+  s.textContent = text
+  return s
+}
+
+function renderSugs() {
+  prevBefore = before()
+  $('sugs').replaceChildren(...engine.suggest(prevBefore).map(s => button(s.label, () => accept(s), 'chip')))
+}
+
+function renderRecent() {
   $('recent').replaceChildren(
     ...mine().slice(-6).reverse().map(h => button(h, () => {
-      begin()
-      m.taps++
-      text = h
-      render()
+      ta.value = h
+      ta.focus()
+      renderSugs()
     }))
   )
 }
 
+function renderFav() {
+  $('fav').replaceChildren(span('fav-label', T[lang].favLabel), span('fav-phrase', favorite || T[lang].favHint))
+  $('fav').lang = favorite ? (isHi(favorite) ? 'hi' : 'en') : lang
+  $('fav').disabled = !favorite
+  $('unfav').hidden = !favorite
+}
+
+function insert(str) {
+  ta.setRangeText(str, ta.selectionStart, ta.selectionEnd, 'end')
+  renderSugs()
+}
+
 function press(ch) {
-  begin()
-  if (/^\s*$|[.?!]\s$/.test(text)) ch = ch.toUpperCase()
-  const [top] = engine.suggest(text)
-  if (top && !top.insert.toLowerCase().startsWith(ch.toLowerCase())) {
-    m.ignored++
-    engine.feedback(false)
-  }
-  text += ch
-  m.keys++
-  render()
+  if (/^\s*$|[.?!]\s$/.test(before())) ch = ch.toUpperCase()
+  const [top] = engine.suggest(before())
+  if (top && !top.insert.toLowerCase().startsWith(ch.toLowerCase())) engine.feedback(false)
+  insert(ch)
 }
 
 function accept(s) {
-  begin()
-  text += s.insert
-  m.taps++
-  m.accepted++
   engine.feedback(true)
-  render()
+  insert(s.insert)
+  ta.focus({ preventScroll: true })
 }
 
 function back() {
-  if (!text) return
-  begin()
-  m.keys++
-  m.corrections++
-  text = text.slice(0, -1)
-  render()
+  const s = ta.selectionStart
+  if (s !== ta.selectionEnd) ta.setRangeText('', s, ta.selectionEnd, 'end')
+  else if (s > 0) ta.setRangeText('', s - 1, s, 'end')
+  renderSugs()
 }
 
 function delWord() {
-  if (!text) return
-  begin()
-  m.taps++
-  m.corrections++
-  text = text.replace(/\S+\s*$/, '')
-  render()
+  const s = ta.selectionStart
+  ta.setRangeText('', before().replace(/\S+\s*$/, '').length, s, 'end')
+  renderSugs()
 }
 
-function wipe() {
-  if (!text) return
-  begin()
-  m.taps++
-  m.corrections++
-  text = ''
-  render()
+function say(str) {
+  if (!('speechSynthesis' in window)) {
+    $('note').textContent = 'This browser cannot speak aloud. Try Chrome or Edge.'
+    return
+  }
+  const u = new SpeechSynthesisUtterance(str)
+  u.lang = isHi(str) ? 'hi-IN' : 'en-IN'
+  u.onend = u.onerror = () => $('mascot').classList.remove('talk')
+  $('mascot').classList.add('talk')
+  speechSynthesis.cancel()
+  speechSynthesis.speak(u)
 }
 
 function speak() {
-  const said = text.trim()
+  const said = ta.value.trim()
   if (!said) return
-  const secs = ((performance.now() - m.start) / 1000).toFixed(1)
-  const diff = said.length - m.keys - m.taps
-  $('stats').textContent =
-    `Spoken in ${secs}s: ${m.keys} keys, ${m.taps} taps, ${m.corrections} corrections, ` +
-    `${m.accepted} accepted, ${m.ignored} ignored. ` +
-    `${diff >= 0 ? diff + ' fewer' : -diff + ' more'} actions than typing every letter.`
-  if ('speechSynthesis' in window) {
-    const u = new SpeechSynthesisUtterance(said)
-    u.lang = T[lang].voice
-    u.onend = u.onerror = () => $('mascot').classList.remove('talk')
-    $('mascot').classList.add('talk')
-    speechSynthesis.cancel()
-    speechSynthesis.speak(u)
-  } else {
-    $('stats').textContent = 'This browser cannot speak aloud. Try Chrome or Edge.'
-  }
+  say(said)
   history.push(said)
-  save(history)
-  engine.learn(said)
-  text = ''
-  m = fresh()
-  render()
+  put('taptalk-history', history.slice(-200))
+  if (isHi(said) === (lang === 'hi')) engine.learn(said)
+  ta.value = ''
+  renderSugs()
+  renderRecent()
 }
 
 function buildKeys() {
@@ -167,32 +163,24 @@ function buildKeys() {
   )
 }
 
-function setMode(x) {
-  mode = x
-  engine = createEngine(x, mine(), lang)
-  document.body.dataset.mode = x
-  for (const b of document.querySelectorAll('.modes button')) {
-    b.setAttribute('aria-pressed', b.dataset.mode === x)
-  }
-  render()
-}
-
 function setLang(l) {
   lang = l
   const t = T[l]
-  for (const sel of ['.compose', '.board', '.recent']) document.querySelector(sel).lang = l
-  $('say').dataset.ph = t.ph
+  ta.lang = l
+  ta.placeholder = t.ph
   $('recent').dataset.empty = t.none
   $('speak').textContent = t.speak
+  $('star').textContent = t.star
   $('delword').textContent = t.del
   $('wipe').textContent = t.wipe
+  $('big').textContent = t.big
   $('rh').textContent = t.recent
-  for (const b of document.querySelectorAll('.langs button')) {
-    b.setAttribute('aria-pressed', b.dataset.lang === l)
-  }
-  text = ''
+  for (const b of document.querySelectorAll('.langs button')) b.setAttribute('aria-pressed', b.dataset.lang === l)
+  engine = createEngine(MODE, mine(), l)
   buildKeys()
-  setMode(mode)
+  renderFav()
+  renderRecent()
+  renderSugs()
 }
 
 $('langs').append(
@@ -203,49 +191,51 @@ $('langs').append(
   })
 )
 
-$('modes').append(
-  ...Object.entries(MODES).map(([k, v]) => {
-    const b = button('', () => setMode(k), '', `Version ${k}: ${v}`)
-    const letter = document.createElement('b')
-    letter.textContent = k
-    b.append(letter, v)
-    b.dataset.mode = k
-    return b
-  })
-)
+ta.addEventListener('input', () => {
+  const now = before()
+  const last = now.slice(-1)
+  if (isHi(last) && lang === 'en') return setLang('hi')
+  if (/[a-z]/i.test(last) && lang === 'hi') return setLang('en')
+  if (now.length === prevBefore.length + 1 && now.startsWith(prevBefore)) {
+    const [top] = engine.suggest(prevBefore)
+    if (top && !top.insert.toLowerCase().startsWith(last.toLowerCase())) engine.feedback(false)
+  }
+  renderSugs()
+})
+ta.addEventListener('click', renderSugs)
+ta.addEventListener('keyup', renderSugs)
+ta.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+    e.preventDefault()
+    speak()
+  }
+})
 
 $('speak').onclick = speak
 $('delword').onclick = delWord
-$('wipe').onclick = wipe
-
-document.addEventListener('keydown', e => {
-  if (e.ctrlKey || e.metaKey || e.altKey) return
-  if (e.target.closest('button') && (e.key === 'Enter' || e.key === ' ')) return
-  if (e.key === 'Enter') speak()
-  else if (e.key === 'Backspace') back()
-  else if (e.key.length === 1) press(e.key)
-  else return
-  e.preventDefault()
-})
-
-const delta = n => (n > 0 ? `−${n}` : n < 0 ? `+${-n}` : '±0')
-
-$('run').onclick = () => {
-  const res = bench(lang)
-  const ks = Object.keys(MODES)
-  const head = ks.map(k => `<th scope="col">${k} ${MODES[k]}</th>`).join('')
-  const rows = TASKS[lang].map((t, i) =>
-    `<tr><th scope="row">${t.name}</th>${ks.map(k => `<td>${res[k][i].effort} (${delta(res[k][i].saved)})</td>`).join('')}</tr>`
-  ).join('')
-  const total = ks.map(k => {
-    const effort = res[k].reduce((a, r) => a + r.effort, 0)
-    const saved = res[k].reduce((a, r) => a + r.saved, 0)
-    return `<td>${effort} (${delta(saved)})</td>`
-  }).join('')
-  $('bench').innerHTML =
-    `<div class="tablewrap"><table><caption>Actions per task, and the change versus typing every letter</caption>` +
-    `<thead><tr><th scope="col">Task</th>${head}</tr></thead><tbody>${rows}<tr><th scope="row">Total</th>${total}</tr></tbody></table></div>`
+$('wipe').onclick = () => {
+  ta.value = ''
+  renderSugs()
+}
+$('star').onclick = () => {
+  const t = ta.value.trim()
+  if (!t) return
+  favorite = t
+  put('taptalk-fav', favorite)
+  renderFav()
+}
+$('unfav').onclick = () => {
+  favorite = ''
+  put('taptalk-fav', favorite)
+  renderFav()
+}
+$('fav').onclick = () => favorite && say(favorite)
+$('big').onclick = () => {
+  const on = $('board').hidden
+  $('board').hidden = !on
+  $('big').setAttribute('aria-pressed', on)
+  ta.setAttribute('inputmode', on ? 'none' : 'text')
 }
 
 setLang('en')
-$('say').focus()
+if (matchMedia('(pointer:fine)').matches) ta.focus()

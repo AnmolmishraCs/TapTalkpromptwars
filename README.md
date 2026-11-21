@@ -1,6 +1,6 @@
 # TapTalk
 
-A web-based AAC (augmentative and alternative communication) interface for people who use AAC to communicate, including non-speaking people and people with speech difficulties. Their voice matters, so it focuses on one thing: helping them say exactly what they mean in fewer taps, while they stay the author of every word.
+A web-based AAC (augmentative and alternative communication) app for people who use AAC to communicate, including non-speaking people and people with speech difficulties. Their voice matters, so it focuses on one thing: helping them say exactly what they mean in fewer taps, while they stay the author of every word.
 
 **Vertical:** Build for Impact: Reimagining the Future with AI
 
@@ -14,93 +14,71 @@ Rules the interface follows:
 - Nothing is spoken or inserted without a tap.
 - Prediction only counts as useful if accepting it costs fewer actions than typing.
 
-## Four suggestion styles (switch at the top)
+## How it works
+
+- **Type with your own keyboard.** The sentence box is a normal text field, so the device keyboard, a physical keyboard, voice typing and Hindi keyboards all work. Prefer larger keys? Turn on **Big keys** for TapTalk's own English or Devanagari keyboard.
+- **Suggestions** appear under the sentence, at the cursor. Tap one to accept it, or keep typing to ignore it.
+- **My favorite** is one card at the top. Type a phrase, tap ★ Favorite, and from then on it speaks with a single tap.
+- **Speak** reads the sentence aloud using the device's own voice, in English or Hindi (it detects which from what was typed).
+- **English and हिन्दी** each have their own phrases, predictions and labels.
+- **Spoken before** keeps recent sentences so they can be loaded and edited.
+
+## Suggestions
+
+All logic is in `public/predict.js` (plain JS, no AI API, works offline). There are four styles:
 
 | Version | Behavior |
 |---|---|
 | A Words | Completes the current word, or predicts the next word |
-| B Phrases | Completes the current thought from a phrase list, matching even mid-sentence, then words |
-| C Personal | Like B, but sentences the user spoke before are weighted 3x |
-| D Adaptive | Like C, but tracks accepts and ignores. If the user keeps ignoring suggestions, it shows only phrases, then only strong matches, then almost nothing. Accepting one brings them back |
+| B Phrases | Completes the current thought from a phrase list, even mid-sentence, then words |
+| C Personal | Like B, but sentences the user spoke before count 3x |
+| D Adaptive | Like C, but backs off when the user keeps ignoring suggestions, and returns when one is accepted |
 
-All logic is in `public/predict.js` (plain JS, no AI API, runs offline). The sentence list is a small built-in list of about 40 everyday phrases.
-
-## How it works
-
-Switch between English and हिन्दी at the top (own keyboard, own phrases, own predictions, spoken with a Hindi voice). Type with the on-screen keyboard or a physical one. Tap a chip to accept a suggestion. Backspace, Delete word and Clear all handle changes of mind. Speak reads the sentence aloud with the browser's built-in speech. Every spoken sentence shows its measured time, keys, taps, corrections, accepted and ignored suggestions, and is added to "Spoken before".
-
-The layout is a CSS grid that reflows: stacked on phones, side by side in landscape, extra panels move up into free space on large screens.
+The app uses D. Add `?v=A`, `?v=B` or `?v=C` to the address to try the others.
 
 ## Evaluation
 
-The "Does prediction save effort?" panel runs 5 tasks through all four versions with a scripted test user who accepts a suggestion only when it exactly matches what they want:
+`npm run bench` runs 5 communication tasks through all four versions, in English and Hindi, with a scripted test user who accepts a suggestion only when it exactly matches what they want. The tasks are: a plain sentence, a two-part sentence, an unusual sentence, changing their mind halfway, and ignoring every suggestion. It counts key presses and taps and compares them with typing every letter.
 
-1. "I want to go home after dinner."
-2. "Can you wait five minutes? I need to finish this."
-3. An unusual sentence not in the phrase list
-4. Changing their mind halfway (types "I want to eat pizza", then switches to "I want to go outside.")
-5. Ignoring every suggestion
+What it shows:
+- Prediction saves roughly a quarter of the actions in English and more in Hindi, mostly when the sentence resembles a known phrase.
+- Phrase completion is not always better than word prediction. In one task its chips pushed out a more useful word chip.
+- Personalization helps most with sentences the user repeats, and can hurt when history outranks a better match.
+- Adaptive matches Personal on action counts, so it is not faster. It is the default because it stays out of the way when suggestions are ignored, which this benchmark barely measures. A trial with real users would settle it.
+- When nothing fits, no version costs more than typing.
 
-Actions = key presses + taps. Results (fewer is better, in brackets the saving versus typing every letter):
+Limits: the test user is idealized, the phrase lists are small, and the benchmark counts actions, not time.
 
-| Task | A | B | C | D |
-|---|---|---|---|---|
-| Go home | 19 (−12) | 18 (−13) | 13 (−18) | 13 (−18) |
-| Wait | 26 (−23) | 29 (−20) | 26 (−23) | 26 (−23) |
-| Unusual | 41 (−5) | 41 (−5) | 41 (−5) | 41 (−5) |
-| Change of mind | 28 (−11) | 22 (−17) | 28 (−11) | 28 (−11) |
-| Ignore all | 36 (±0) | 36 (±0) | 36 (±0) | 36 (±0) |
-| Total | 150 (−51) | 146 (−55) | 144 (−57) | 144 (−57) |
+## Design
 
-What this shows, honestly:
-- Prediction saves roughly a quarter of the actions, and gains come mostly when the sentence resembles a known phrase.
-- Phrase completion (B) is not always better than words (A): on task 2 it was worse, because phrase chips pushed out a useful word chip.
-- Personalization (C) helps on sentences the user repeats (task 1) but can hurt when history ranks above a better match (task 4).
-- Adaptive (D) matched C in this benchmark. It did not measurably reduce ignored suggestions here, so per the brief it has not earned its place yet and should be tested with real users who ignore suggestions often.
-- When nothing fits (tasks 3 and 5), no version slows the user down: cost equals typing.
+Light lavender page, white and pastel cards, black actions, rounded rectangles everywhere, Poppins type. Gestalt principles guide the layout:
+- **Proximity:** suggestions sit directly under the sentence, and the actions directly under them.
+- **Common region:** each job (favorite, compose, keyboard, history) is its own card.
+- **Similarity:** actions are black, suggestions are mint, and selected options are always black.
+- **Figure and ground:** the sentence is the largest text and the Speak button is the one high-contrast block.
+- **Hierarchy:** the favorite card comes first because it is the fastest way to speak.
 
-Limits: the scripted test user is idealized, the phrase list is small, and the benchmark counts actions, not time. Real time and error data come from the live stats line after each spoken sentence. Task time and search count are not simulated (there is no search in the interface by design).
-
-## Hindi (हिन्दी)
-
-The Devanagari keyboard has vowels, consonants, matras (shown on a dotted circle), halant, nukta, anusvara and the conjuncts क्ष, त्र, ज्ञ as single keys. Hindi has its own phrase list and predictions, and the same four versions. The labels on the main screen are in Hindi; the stats line and test panel stay in English.
-
-Same 5 tasks in Hindi (actions, with the saving versus typing every character):
-
-| Task | A | B | C | D |
-|---|---|---|---|---|
-| Go home | 20 (−8) | 17 (−11) | 10 (−18) | 10 (−18) |
-| Wait | 29 (−24) | 27 (−26) | 27 (−26) | 27 (−26) |
-| Unusual | 26 (−6) | 25 (−7) | 25 (−7) | 25 (−7) |
-| Change of mind | 37 (−13) | 33 (−17) | 33 (−17) | 33 (−17) |
-| Ignore all | 37 (±0) | 37 (±0) | 37 (±0) | 37 (±0) |
-| Total | 149 (−51) | 139 (−61) | 132 (−68) | 132 (−68) |
-
-Notes:
-- Phrase completion and personalization help more in Hindi than in English, since Hindi sentences repeat endings like "जाना है" and "सकते हैं".
-- The "Unusual" Hindi sentence still shares common words with the list, so it saves a little. It is not a fully novel sentence.
-- Every Devanagari character counts as one key, except the three conjunct keys, so real counts are slightly lower than shown.
-- The built-in phrases are written gender-neutral on purpose. Personalization (C and D) then learns the user's own forms.
-- The Hindi phrase list should be reviewed by a native speaker before real use.
+The cards reflow: stacked on phones and portrait tablets, side by side in landscape, and they move up into free space on large screens.
 
 ## Run, test, deploy
 
 ```bash
 npm test          # 14 unit tests, no install needed
 npm start         # http://localhost:8080
+npm run bench     # the evaluation above
 gcloud run deploy taptalk --source . --region asia-south1 --allow-unauthenticated
 ```
 
 ## Accessibility
 
-Large touch targets (48px and up), high contrast text, visible keyboard focus, full physical keyboard support (type, Backspace, Enter to speak), screen-reader labels and a live stats region, reduced-motion support, layout works in portrait and landscape.
+Large touch targets, high contrast, visible keyboard focus, labels for screen readers, reduced-motion support, works with the device keyboard (including Hindi), voice typing and switch-style keyboards, and layouts for portrait and landscape.
 
 ## Security
 
-No external requests, no API keys, no user data leaves the device (history stays in the browser's local storage). The server only serves files from `public/`, rejects path tricks, and sends a strict Content-Security-Policy.
+No API keys and no accounts. Sentences, history and the favorite stay in the browser's local storage on the device. The only outside request is the Poppins font from Google Fonts, and the Content-Security-Policy allows nothing else. The server only serves files from `public/` and rejects path tricks.
 
 ## Assumptions
 
-- English and Hindi. Speech uses the device's own voice, so a Hindi voice must be installed on the device (on Android: Settings, then Text-to-speech).
-- Editing is backspace-based, not at an arbitrary cursor position.
-- The phrase list is a starting point, not a clinical vocabulary.
+- English and Hindi. Speech uses the device's own voices, so a Hindi voice must be installed (on Android: Settings, then Text-to-speech).
+- Built-in Hindi phrases are written gender-neutral, and personalization learns the user's own forms. They should be reviewed by a native speaker.
+- The phrase lists are a starting point, not a clinical vocabulary.
