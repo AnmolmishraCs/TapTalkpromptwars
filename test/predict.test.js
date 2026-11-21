@@ -61,5 +61,18 @@ test('changing your mind counts the corrections', () => {
 test('benchmark covers every version and task', () => {
   const res = bench()
   assert.deepEqual(Object.keys(res), ['A', 'B', 'C', 'D'])
-  assert.ok(Object.values(res).every(rows => rows.length === TASKS.length))
+  assert.ok(Object.values(res).every(rows => rows.length === TASKS.en.length))
+})
+
+test('Hindi completes a word', () => {
+  assert.ok(createEngine('A', [], 'hi').suggest('भू').some(s => s.insert === 'ख '))
+})
+
+test('Hindi completes a phrase', () => {
+  assert.ok(createEngine('B', [], 'hi').suggest('मुझे घर').some(s => s.insert === ' जाना है'))
+})
+
+test('Hindi benchmark covers every version and task', () => {
+  const res = bench('hi')
+  assert.ok(Object.values(res).every(rows => rows.length === TASKS.hi.length))
 })

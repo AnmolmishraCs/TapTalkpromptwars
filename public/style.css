@@ -1,6 +1,6 @@
 *{box-sizing:border-box}
 :root{--ink:#1b1340;--sun:#ffd43b;--cream:#fff6df;--c:#2b8a57}
-body{margin:0;min-height:100dvh;padding:clamp(.75rem,2.5vw,1.75rem);background:#d4c5ff;color:var(--ink);font:800 1rem/1.35 "Arial Rounded MT Bold","Trebuchet MS",system-ui,sans-serif}
+body{margin:0;min-height:100dvh;padding:clamp(.75rem,2.5vw,1.75rem);background:#d4c5ff;color:var(--ink);font:800 1rem/1.35 "Arial Rounded MT Bold","Trebuchet MS","Noto Sans Devanagari","Nirmala UI",system-ui,sans-serif}
 body[data-mode=A]{--c:#d9480f}
 body[data-mode=B]{--c:#2b8a57}
 body[data-mode=C]{--c:#1c64d6}
@@ -9,10 +9,11 @@ header,main{max-width:90rem;margin-inline:auto}
 header{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem 1.5rem;margin-bottom:clamp(.75rem,2vw,1.25rem)}
 h1{margin:0;font-size:clamp(2.5rem,8vw,5rem);line-height:.9;font-weight:900;letter-spacing:-.04em}
 header p{margin:0;font-size:1.15rem}
-.modes{display:flex;flex-wrap:wrap;gap:.5rem;margin-left:auto}
+.modes,.langs{display:flex;flex-wrap:wrap;gap:.5rem}
+.langs{margin-left:auto}
 button{font:inherit;color:inherit;cursor:pointer;border:0;border-radius:999px;min-height:3rem;padding:.5rem 1.25rem;background:#fff}
-.modes button{background:rgba(255,255,255,.6)}
-.modes button[aria-pressed=true]{background:var(--sun)}
+.modes button,.langs button{background:rgba(255,255,255,.6)}
+.modes button[aria-pressed=true],.langs button[aria-pressed=true]{background:var(--sun)}
 .modes b{display:inline-grid;place-items:center;width:1.6rem;height:1.6rem;margin-right:.5rem;border-radius:50%;background:var(--ink);color:#fff;font-size:.85rem}
 main{display:grid;gap:clamp(.75rem,2vw,1.25rem);grid-template-columns:repeat(auto-fit,minmax(min(100%,22rem),1fr));grid-auto-flow:dense;align-items:start}
 section{border-radius:2rem;padding:clamp(1rem,2.5vw,1.75rem)}
@@ -24,7 +25,8 @@ h2{margin:0 0 .5rem;font-size:1.4rem;font-weight:900}
 .talk .mouth{animation:yap .22s ease-in-out infinite alternate}
 @keyframes yap{to{transform:scaleY(2.4)}}
 .sentence{flex:1;min-width:0;min-height:2.2em;font-size:clamp(1.9rem,5.5vw,3.4rem);line-height:1.05;font-weight:900;letter-spacing:-.02em;overflow-wrap:anywhere}
-.sentence.empty::before{content:"What do you want to say?";opacity:.75}
+.sentence.empty::before{content:attr(data-ph);opacity:.75}
+.sentence:lang(hi){line-height:1.35}
 .caret{display:inline-block;width:.12em;height:.9em;margin-left:.05em;vertical-align:-.1em;background:currentColor;animation:blink 1s steps(1) infinite}
 @keyframes blink{50%{opacity:0}}
 .sugs{display:flex;flex-wrap:wrap;gap:.6rem;min-height:3.25rem;align-content:flex-start}
@@ -42,7 +44,7 @@ h2{margin:0 0 .5rem;font-size:1.4rem;font-weight:900}
 .key.wide{flex:4}
 .recent{background:#fff}
 #recent{display:flex;flex-wrap:wrap;gap:.5rem}
-#recent:empty::before{content:"Sentences you speak will show up here.";font-weight:700}
+#recent:empty::before{content:attr(data-empty);font-weight:700}
 #recent button{background:#efe9ff;text-align:left}
 .lab{background:var(--sun)}
 .lab p{margin:.25rem 0 .75rem;font-weight:700}
