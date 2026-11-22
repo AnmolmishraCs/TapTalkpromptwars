@@ -21,6 +21,7 @@
       <h1><img src="logo.png" alt="" width="44" height="44"><span>TapTalk</span></h1>
       <nav class="tabs" id="tabs" aria-label="Pages"></nav>
       <div class="opts">
+        <button id="voice" class="ai" type="button" aria-pressed="false" hidden></button>
         <button id="ai" class="ai" type="button" aria-pressed="false" hidden></button>
         <div class="langs" id="langs" role="group" aria-label="Language"></div>
       </div>
@@ -29,22 +30,31 @@
       <section class="slide talk" aria-label="Talk">
         <div class="favrow" id="favrow"></div>
         <div class="main">
-          <svg id="mascot" class="mascot" viewBox="0 0 150 110" aria-hidden="true">
+          <div class="peek">
+            <svg id="mascot" class="mascot" viewBox="0 0 150 110" aria-hidden="true">
             <path d="M14 108C16 50 40 6 72 6s52 44 54 102z" fill="#ffd60a" stroke="#fff" stroke-width="6" stroke-linejoin="round"/>
             <circle cx="54" cy="58" r="13" fill="#fff"/><circle cx="86" cy="52" r="13" fill="#fff"/>
             <circle cx="58" cy="55" r="6.5" fill="#111"/><circle cx="90" cy="49" r="6.5" fill="#111"/>
             <path class="mouth" d="M60 80l17-2.5c.3 6-3 11-8.5 11S60.3 85.5 60 80z" fill="#111"/>
             <g class="waves" fill="none" stroke-width="5" stroke-linecap="round"><path d="M131 24l10-6"/><path d="M134 44l11-2"/><path d="M132 64l11 3"/></g>
           </svg>
-          <div class="bubble">
-            <textarea id="say" rows="2" aria-label="Your sentence" enterkeyhint="send" autocomplete="off" autocapitalize="sentences" spellcheck="false"></textarea>
-            <button id="star" class="icon star" type="button" aria-pressed="false">
+          </div>
+          <div class="col">
+            <div class="bubble">
+              <textarea id="say" rows="2" aria-label="Your sentence" enterkeyhint="send" autocomplete="off" autocapitalize="sentences" spellcheck="false"></textarea>
+              <button id="star" class="icon star" type="button" aria-pressed="false">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.8 5.8 6.4.9-4.6 4.5 1.1 6.3-5.7-3-5.7 3 1.1-6.3-4.6-4.5 6.4-.9z"/></svg>
             </button>
+            </div>
+            <div class="tools">
+              <button id="delword" class="tool" type="button"></button>
+              <button id="wipe" class="tool" type="button"></button>
+              <button id="big" class="tool right" type="button" aria-pressed="false"></button>
+            </div>
           </div>
         </div>
         <div class="hist">
-          <h2 id="rh"></h2>
+          <div class="hh"><h2 id="rh"></h2><button class="selbtn" data-kind="hist" type="button"></button></div>
           <ul id="hlist"></ul>
         </div>
         <div class="bar">
@@ -52,9 +62,6 @@
           <div class="board" id="board" aria-label="Keyboard" hidden><div id="keys"></div></div>
           <div class="actions">
             <button id="speak" class="speak" type="button"></button>
-            <button id="delword" type="button"></button>
-            <button id="wipe" type="button"></button>
-            <button id="big" type="button" aria-pressed="false"></button>
           </div>
           <p id="note" role="status"></p>
         </div>
@@ -67,23 +74,43 @@
           <div>
             <div class="sithead">
               <h3 id="sith"></h3>
-              <button id="sitedit" class="mini" type="button" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button>
+              <div class="pair">
+                <button class="selbtn" data-kind="sits" type="button"></button>
+                <button id="sitedit" class="mini" type="button" hidden></button>
+                <button id="sitdel" class="mini" type="button" hidden></button>
+              </div>
             </div>
             <div class="grid" id="sitgrid"></div>
           </div>
         </div>
       </section>
+      <section class="slide" aria-label="Symbols">
+        <h2 id="yh"></h2>
+        <p id="ys"></p>
+        <div class="symgrid" id="symgrid"></div>
+      </section>
       <section class="slide" aria-label="Favorites">
-        <h2 id="fh"></h2>
+        <div class="hh"><h2 id="fh"></h2><button class="selbtn" data-kind="favs" type="button"></button></div>
         <p id="fs"></p>
         <div class="grid" id="favgrid"></div>
       </section>
       <section class="slide" aria-label="My words">
-        <h2 id="nh"></h2>
+        <div class="hh"><h2 id="nh"></h2><button class="selbtn" data-kind="names" type="button"></button></div>
         <p id="ns"></p>
         <div class="grid" id="namegrid"></div>
       </section>
     </div>
+  </div>
+  <div id="selbar" class="selbar" hidden>
+    <span id="selcount"></span>
+    <button id="selall" type="button"></button>
+    <button id="seltop" type="button"></button>
+    <button id="seldel" type="button"></button>
+    <button id="seldone" type="button"></button>
+  </div>
+  <div id="toast" class="toast" role="status" hidden>
+    <span id="tmsg"></span>
+    <button id="tundo" type="button"></button>
   </div>
   <dialog id="aidlg" aria-labelledby="aititle">
     <form method="dialog">

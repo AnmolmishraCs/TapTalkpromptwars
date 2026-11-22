@@ -1,4 +1,7 @@
 import { EN, HI } from './phrases.js'
+import { EN_WORDS, HI_WORDS } from './words.js'
+
+const BASE = { en: EN_WORDS, hi: HI_WORDS.map(w => w[0]), hr: HI_WORDS.map(w => w[1]) }
 
 export const CORPUS = { en: EN, hi: HI.map(p => p[0]), hr: HI.map(p => p[1]) }
 
@@ -37,7 +40,7 @@ const SEED = {
 const tokens = s => s.toLowerCase().match(/[\p{L}\p{M}']+/gu) || []
 const clamp = n => Math.min(1, Math.max(0, n))
 
-function build(sents) {
+function build(sents, base) {
   const uni = new Map()
   const bi = new Map()
   for (const [s, w] of sents) {
@@ -52,6 +55,7 @@ function build(sents) {
       prev = t
     }
   }
+  base.forEach((w, i) => uni.set(w, (uni.get(w) || 0) + 0.4 / (1 + i / 80)))
   return { uni, bi }
 }
 
@@ -112,7 +116,7 @@ export function createEngine(mode = 'B', past = [], lang = 'en', names = []) {
   const rebuild = () => {
     sents = [...CORPUS[lang].map(s => [s, 1]), ...names.map(n => [n, 3]), ...(personal ? past.map(s => [s, 3]) : [])]
     const forms = new Map(names.flatMap(n => n.match(/[\p{L}\p{M}']+/gu) || []).map(w => [w.toLowerCase(), w]))
-    index = { ...build(sents), forms }
+    index = { ...build(sents, BASE[lang]), forms }
   }
   rebuild()
 
@@ -129,14 +133,17 @@ export function createEngine(mode = 'B', past = [], lang = 'en', names = []) {
       trust = clamp(trust + (accepted ? 0.2 : -0.04))
     },
     suggest(text) {
-      const w = words(text, index)
-      let out = mode === 'A' ? w : [...phrases(text, sents), ...w]
+      const words3 = words(text, index)
+      const phrases2 = mode === 'A' ? [] : phrases(text, sents).slice(0, 2)
+      let out = [...words3, ...phrases2]
       if (mode === 'D') {
         if (trust < 0.2) out = out.filter(s => s.strong)
         else if (trust < 0.5) out = out.filter(s => s.kind === 'phrase')
       }
       const seen = new Set()
-      return out.filter(s => !seen.has(s.insert) && seen.add(s.insert)).slice(0, mode === 'D' && trust < 0.2 ? 1 : 3)
+      return out
+        .filter(s => !seen.has(s.insert) && !seen.has(s.label) && seen.add(s.insert) && seen.add(s.label))
+        .slice(0, mode === 'D' && trust < 0.2 ? 1 : 5)
     },
   }
 }

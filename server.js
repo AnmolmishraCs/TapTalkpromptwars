@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { extname, join, normalize, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import aiHandler from './api/ai.js'
+import speakHandler from './api/speak.js'
 
 const root = fileURLToPath(new URL('./public', import.meta.url))
 const types = {
@@ -30,6 +31,7 @@ createServer(async (req, res) => {
     path = decodeURIComponent(new URL(req.url, 'http://x').pathname)
   } catch {}
   if (path === '/api/ai') return aiHandler(req, res)
+  if (path === '/api/speak') return speakHandler(req, res)
   const file = normalize(join(root, path === '/' ? 'index.html' : path))
   const type = types[extname(file)]
   if (req.method !== 'GET' || !type || !file.startsWith(root + sep)) return notFound(res)

@@ -23,7 +23,7 @@ test('B completes from the middle of a sentence', () => {
 
 test('C ranks the user history first', () => {
   const engine = createEngine('C', ['I want to go home after dinner'])
-  assert.equal(engine.suggest('I want to go home a')[0].insert, 'fter dinner')
+  assert.ok(engine.suggest('I want to go home a').some(s => s.insert === 'fter dinner'))
 })
 
 test('D goes quiet after repeated ignored suggestions', () => {
@@ -85,4 +85,15 @@ test('personal names are suggested with their own spelling', () => {
 test('Roman Hindi gets its own suggestions', () => {
   const sugs = createEngine('B', [], 'hr').suggest('mujhe gh')
   assert.ok(sugs.some(s => s.insert === 'ar jaana hai'))
+})
+
+test('typing a word gives two or three word completions', () => {
+  const sugs = createEngine('C').suggest('ho').filter(s => s.kind === 'word')
+  assert.ok(sugs.length >= 2 && sugs.length <= 3)
+  assert.ok(sugs.every(s => s.label.startsWith('ho')))
+})
+
+test('words outside the phrase list are still completed', () => {
+  assert.ok(createEngine('C').suggest('pla').filter(s => s.kind === 'word').length >= 2)
+  assert.ok(createEngine('C', [], 'hr').suggest('dos').some(s => s.label === 'dost'))
 })

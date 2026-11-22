@@ -1,4 +1,5 @@
 import { HI } from './phrases.js'
+import { HI_WORDS } from './words.js'
 
 const tok = s => s.toLowerCase().match(/[\p{L}\p{M}']+/gu) || []
 
@@ -6,7 +7,7 @@ const DICT = new Map(Object.entries({
   main: 'मैं', hain: 'हैं', hoon: 'हूँ', nahi: 'नहीं', phone: 'फ़ोन', doctor: 'डॉक्टर',
   tv: 'टीवी', school: 'स्कूल', ok: 'ओके', mobile: 'मोबाइल', hospital: 'हॉस्पिटल',
 }))
-for (const [deva, roman] of HI) {
+for (const [deva, roman] of [...HI, ...HI_WORDS]) {
   const a = tok(deva)
   const b = tok(roman)
   if (a.length === b.length) b.forEach((w, i) => DICT.set(w, a[i]))
@@ -52,3 +53,12 @@ function byRules(w) {
 
 export const toDevanagari = text =>
   text.replace(/[A-Za-z']+/g, w => DICT.get(w.toLowerCase()) ?? byRules(w.toLowerCase()))
+
+const ROMAN = new Map()
+for (const [deva, roman] of [...HI, ...HI_WORDS]) {
+  const a = tok(deva)
+  const b = tok(roman)
+  if (a.length === b.length) a.forEach((w, i) => ROMAN.set(w, b[i]))
+}
+
+export const toRoman = text => text.replace(/[\p{L}\p{M}]+/gu, w => ROMAN.get(w) ?? w)
