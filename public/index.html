@@ -21,8 +21,9 @@
       <h1><img src="logo.png" alt="" width="44" height="44"><span>TapTalk</span></h1>
       <nav class="tabs" id="tabs" aria-label="Pages"></nav>
       <div class="opts">
-        <button id="voice" class="ai" type="button" aria-pressed="false" hidden></button>
-        <button id="ai" class="ai" type="button" aria-pressed="false" hidden></button>
+        <button id="find" class="mini hbtn" type="button"></button>
+        <button id="quick" class="mini hbtn" type="button"></button>
+        <button id="settings" class="mini hbtn" type="button"></button>
         <div class="langs" id="langs" role="group" aria-label="Language"></div>
       </div>
     </header>
@@ -49,7 +50,9 @@
             <div class="tools">
               <button id="delword" class="tool" type="button"></button>
               <button id="wipe" class="tool" type="button"></button>
-              <button id="big" class="tool right" type="button" aria-pressed="false"></button>
+              <button id="emo" class="tool right" type="button"></button>
+              <button id="ai" class="tool aitool" type="button" aria-pressed="false" hidden></button>
+              <button id="big" class="tool" type="button" aria-pressed="false"></button>
             </div>
           </div>
         </div>
@@ -58,7 +61,11 @@
           <ul id="hlist"></ul>
         </div>
         <div class="bar">
-          <div id="sugs" class="sugs" aria-label="Suggestions"></div>
+          <div class="sugwrap">
+            <button id="sprev" class="mini" type="button" hidden></button>
+            <div id="sugs" class="sugs" aria-label="Suggestions"></div>
+            <button id="snext" class="mini" type="button" hidden></button>
+          </div>
           <div class="board" id="board" aria-label="Keyboard" hidden><div id="keys"></div></div>
           <div class="actions">
             <button id="speak" class="speak" type="button"></button>
@@ -112,6 +119,28 @@
     <span id="tmsg"></span>
     <button id="tundo" type="button"></button>
   </div>
+  <dialog id="finddlg" class="sheet" aria-labelledby="findtitle">
+    <h2 id="findtitle"></h2>
+    <input id="findq" type="search" autocomplete="off" aria-labelledby="findtitle">
+    <div id="findres" class="results"></div>
+    <div class="drow"><button id="findclose" type="button"></button></div>
+  </dialog>
+  <dialog id="quickdlg" class="sheet" aria-labelledby="quicktitle">
+    <h2 id="quicktitle"></h2>
+    <div id="quickgrid" class="grid"></div>
+    <div class="drow"><button id="quickclose" type="button"></button></div>
+  </dialog>
+  <dialog id="emodlg" class="sheet" aria-labelledby="emotitle">
+    <h2 id="emotitle"></h2>
+    <div id="emogrid" class="emogrid"></div>
+    <div class="drow"><button id="emoclose" type="button"></button></div>
+  </dialog>
+  <dialog id="setdlg" class="sheet" aria-labelledby="settitle">
+    <h2 id="settitle"></h2>
+    <div id="setbody"></div>
+    <div class="drow"><button id="setclose" type="button"></button></div>
+  </dialog>
+  <input id="importfile" type="file" accept="application/json" hidden>
   <dialog id="aidlg" aria-labelledby="aititle">
     <form method="dialog">
       <h2 id="aititle"></h2>
@@ -126,6 +155,7 @@
     <form method="dialog">
       <h2 id="dtitle"></h2>
       <input id="dtext" required maxlength="120" autocomplete="off" aria-labelledby="dtitle">
+      <div id="dcolors" class="colors" role="radiogroup" hidden></div>
       <div class="drow">
         <button id="dsave" class="primary" value="save"></button>
         <button id="ddel" value="delete" formnovalidate></button>

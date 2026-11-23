@@ -18,7 +18,7 @@ test('B completes a phrase', () => {
 
 test('B completes from the middle of a sentence', () => {
   const sugs = createEngine('B').suggest('So I want to go h')
-  assert.ok(sugs.some(s => s.insert === 'ome'))
+  assert.ok(sugs.some(s => s.label === 'home'))
 })
 
 test('C ranks the user history first', () => {
@@ -87,9 +87,9 @@ test('Roman Hindi gets its own suggestions', () => {
   assert.ok(sugs.some(s => s.insert === 'ar jaana hai'))
 })
 
-test('typing a word gives two or three word completions', () => {
+test('typing a word gives several word completions', () => {
   const sugs = createEngine('C').suggest('ho').filter(s => s.kind === 'word')
-  assert.ok(sugs.length >= 2 && sugs.length <= 3)
+  assert.ok(sugs.length >= 2 && sugs.length <= 5)
   assert.ok(sugs.every(s => s.label.startsWith('ho')))
 })
 

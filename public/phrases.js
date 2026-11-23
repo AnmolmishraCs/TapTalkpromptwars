@@ -145,3 +145,50 @@ export const SITUATIONS = [
     },
   },
 ]
+
+const tonesFor = { quick: 'sun', feelings: 'pink', questions: 'blue', greet: 'mint', travel: 'lilac', food: 'peach' }
+SITUATIONS.unshift({
+  id: 'quick', en: 'Quick phrases', hi: 'तुरंत बोलें',
+  p: {
+    en: ['Yes', 'No', 'Maybe', 'Please', 'Thank you', 'Sorry', 'Wait please', 'Help me please', 'Please repeat that', 'I do not understand', 'Okay', 'Excuse me'],
+    hi: ['हाँ', 'नहीं', 'शायद', 'कृपया', 'धन्यवाद', 'माफ़ कीजिए', 'कृपया रुकिए', 'मेरी मदद कीजिए', 'कृपया दोबारा कहिए', 'मुझे समझ नहीं आया', 'ठीक है', 'सुनिए'],
+  },
+})
+SITUATIONS.push(
+  {
+    id: 'feelings', en: 'Feelings', hi: 'भावनाएँ',
+    p: {
+      en: ['I am happy', 'I am sad', 'I am angry', 'I am scared', 'I am tired', 'I am excited', 'I feel lonely', 'I feel better now'],
+      hi: ['मैं खुश हूँ', 'मुझे उदासी लग रही है', 'मुझे गुस्सा आ रहा है', 'मुझे डर लग रहा है', 'मुझे थकान लग रही है', 'मैं उत्साहित हूँ', 'मुझे अकेलापन लग रहा है', 'अब मुझे बेहतर लग रहा है'],
+    },
+  },
+  {
+    id: 'questions', en: 'Questions', hi: 'सवाल',
+    p: {
+      en: ['What is this', 'Where are we going', 'Who is that', 'When will it happen', 'Why is that', 'How much is it', 'Can you show me', 'Is it okay'],
+      hi: ['यह क्या है', 'हम कहाँ जा रहे हैं', 'वह कौन है', 'यह कब होगा', 'ऐसा क्यों है', 'यह कितने का है', 'क्या आप मुझे दिखा सकते हैं', 'क्या यह ठीक है'],
+    },
+  },
+  {
+    id: 'greet', en: 'Greetings', hi: 'अभिवादन',
+    p: {
+      en: ['Hello, how are you', 'Good morning', 'Good afternoon', 'Good evening', 'Good night', 'Nice to meet you', 'Thank you for coming', 'See you again'],
+      hi: ['नमस्ते, आप कैसे हैं', 'सुप्रभात', 'शुभ दोपहर', 'शुभ संध्या', 'शुभ रात्रि', 'आपसे मिलकर अच्छा लगा', 'आने के लिए धन्यवाद', 'फिर मिलेंगे'],
+    },
+  },
+  {
+    id: 'travel', en: 'Travelling', hi: 'यात्रा',
+    p: {
+      en: ['Where is the station', 'I need a ticket please', 'Is this the right bus', 'Please tell me when we arrive', 'I need assistance please', 'How long will it take', 'Please call a taxi', 'Where is the exit'],
+      hi: ['स्टेशन कहाँ है', 'कृपया मुझे एक टिकट चाहिए', 'क्या यह सही बस है', 'कृपया बताइए जब हम पहुँचें', 'मुझे सहायता चाहिए', 'इसमें कितना समय लगेगा', 'कृपया टैक्सी बुलाइए', 'बाहर निकलने का रास्ता कहाँ है'],
+    },
+  },
+  {
+    id: 'food', en: 'Food and drink', hi: 'खाना-पीना',
+    p: {
+      en: ['I would like some water', 'I would like to order', 'Please bring the menu', 'Less spice please', 'It is delicious', 'I am full', 'May I have some more', 'Please pack this'],
+      hi: ['मुझे पानी चाहिए', 'मुझे ऑर्डर देना है', 'कृपया मेन्यू लाइए', 'कृपया मसाला कम रखिए', 'यह बहुत स्वादिष्ट है', 'मेरा पेट भर गया है', 'कृपया थोड़ा और दीजिए', 'कृपया इसे पैक कर दीजिए'],
+    },
+  }
+)
+export const TONES_BY_ID = { home: 'peach', work: 'blue', help: 'pink', doctor: 'mint', out: 'sun', school: 'lilac', people: 'mint', ...tonesFor }

@@ -60,7 +60,7 @@ function build(sents, base) {
 }
 
 const top = (map, keep = () => true) =>
-  [...map].filter(([w]) => keep(w)).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([w]) => w)
+  [...map].filter(([w]) => keep(w)).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([w]) => w)
 
 function words(text, { uni, bi, forms }) {
   const last = /\S$/.test(text) ? text.match(/\S+$/)[0].toLowerCase() : ''
@@ -134,7 +134,7 @@ export function createEngine(mode = 'B', past = [], lang = 'en', names = []) {
     },
     suggest(text) {
       const words3 = words(text, index)
-      const phrases2 = mode === 'A' ? [] : phrases(text, sents).slice(0, 2)
+      const phrases2 = mode === 'A' ? [] : phrases(text, sents).slice(0, 5)
       let out = [...words3, ...phrases2]
       if (mode === 'D') {
         if (trust < 0.2) out = out.filter(s => s.strong)
@@ -143,7 +143,7 @@ export function createEngine(mode = 'B', past = [], lang = 'en', names = []) {
       const seen = new Set()
       return out
         .filter(s => !seen.has(s.insert) && !seen.has(s.label) && seen.add(s.insert) && seen.add(s.label))
-        .slice(0, mode === 'D' && trust < 0.2 ? 1 : 5)
+        .slice(0, mode === 'D' && trust < 0.2 ? 1 : 12)
     },
   }
 }

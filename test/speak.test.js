@@ -48,8 +48,9 @@ test('POST returns audio and keeps the key on the server', async () => {
       seen = { url, init }
       return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ inlineData: { data: 'AAAA' } }] } }] }) }
     }
-    const res = await call('POST', { text: 'Hello there', lang: 'en' })
+    const res = await call('POST', { text: 'Hello there', lang: 'en', emotion: 'happy' })
     assert.equal(res.statusCode, 200)
+    assert.ok(JSON.parse(seen.init.body).contents[0].parts[0].text.includes('cheerfully'))
     assert.deepEqual(res.body, { pcm: 'AAAA', rate: 24000 })
     assert.equal(seen.init.headers['x-goog-api-key'], 'test-key')
     assert.ok(JSON.parse(seen.init.body).generationConfig.responseModalities.includes('AUDIO'))

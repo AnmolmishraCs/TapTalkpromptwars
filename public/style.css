@@ -59,7 +59,7 @@ header{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:.5rem 1rem}
 .peek{flex:none;align-self:flex-end;display:flex;align-items:flex-end;width:clamp(5rem,11vw,7rem);aspect-ratio:1/.85;overflow:hidden;border:2px solid rgba(17,17,17,.14);border-bottom-width:4px;border-radius:1.5rem;background:var(--lilac)}
 .mascot{display:block;width:100%;transform:translateY(10%)}
 .col{flex:1;min-width:0;display:flex;flex-direction:column;gap:.5rem}
-.tools{display:flex;gap:.5rem}
+.tools{display:flex;flex-wrap:wrap;gap:.5rem;min-width:0}
 .tool{width:3.25rem;min-height:2.75rem;padding:0}
 .tool.right{margin-left:auto}
 .mouth{transform-box:fill-box;transform-origin:50% 0}
@@ -175,7 +175,7 @@ dialog::backdrop{background:rgba(17,17,17,.4)}
 :focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 
 @media (min-width:48rem) and (orientation:landscape){
-  .talk{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;grid-template-areas:"fav fav" "main hist" "bar hist"}
+  .talk{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);grid-template-rows:auto minmax(min-content,1fr) auto;grid-template-areas:"fav fav" "main hist" "bar hist"}
   .sit{grid-template-columns:minmax(0,14rem) minmax(0,1fr);align-items:start}
   .sitnav{flex-direction:column;overflow:visible}
   .sitbtn{width:100%;justify-content:flex-start}
@@ -188,8 +188,9 @@ dialog::backdrop{background:rgba(17,17,17,.4)}
   .short h1 span{display:none}
 }
 @media (max-width:24rem){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (orientation:portrait){.keys .hist,.short .hist{display:none}}
-.short .peek{display:none}
+@media not all and (min-width:48rem) and (orientation:landscape){.keys .hist,.short .hist{display:none}}
+.short .peek{width:3.6rem;border-radius:1rem}
+.short .bubble{min-height:3.25rem}
 .short h1{font-size:1.4rem}
 .short .tabs{order:0;flex:0 1 auto;margin-inline:auto}
 .short .tabs button{min-height:2.25rem;flex:none}
@@ -202,3 +203,66 @@ dialog::backdrop{background:rgba(17,17,17,.4)}
 .short .actions .speak,.keys .actions .speak{min-height:3rem;font-size:1.1rem}
 .short .tool{min-height:2.5rem}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.hbtn{width:2.75rem;min-height:2.75rem}
+.hbtn svg{width:1.35rem;height:1.35rem;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.aitool{width:auto;padding:0 .8rem}
+.tool svg.face{width:1.7rem;height:1.7rem;fill:#fff;stroke:currentColor;stroke-width:3.2}
+.face .dot{fill:currentColor;stroke:none}
+.sheet{width:min(94vw,36rem);max-height:88dvh;overflow:auto}
+.sheet .grid{grid-template-columns:repeat(auto-fill,minmax(8rem,1fr))}
+.sheet h3{margin:1rem 0 .5rem}
+#findq{width:100%;min-height:3.25rem;padding:.5rem 1rem;border:2px solid var(--line);border-bottom-width:4px;border-radius:var(--r);font:600 1.15rem Poppins,"Noto Sans Devanagari","Nirmala UI",system-ui,sans-serif}
+.results{display:grid;gap:.5rem;margin-top:.75rem}
+.res{display:flex;gap:.5rem}
+.res .card-say{min-height:3.25rem;padding:.5rem .9rem;align-items:center}
+.res small{margin-left:auto;font-size:.75rem;font-weight:600;color:var(--muted);padding-left:.5rem}
+.res .mini{flex:none}
+.emogrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(5.5rem,1fr));gap:.6rem}
+.emo{flex-direction:column;gap:.2rem;min-height:5.5rem;padding:.4rem;font-size:.85rem}
+.emo svg{width:2.4rem;height:2.4rem;fill:#fff;stroke:currentColor;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}
+.emo svg.spark{fill:currentColor}
+.emo .dot{fill:currentColor;stroke:none}
+.seg{display:flex;gap:.25rem;padding:.25rem;border-radius:var(--r);background:var(--bg)}
+.seg button{flex:1;min-height:2.5rem;border:0;background:transparent}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.5rem}
+.stat{padding:.6rem;border-radius:var(--r);background:var(--bg);text-align:center}
+.stat b{display:block;font-size:1.5rem}
+.stat span{font-size:.8rem;color:var(--muted)}
+.bars{display:flex;align-items:flex-end;gap:.4rem;height:6rem;padding-top:.25rem}
+.bars div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:.2rem;height:100%;font-size:.75rem;color:var(--muted)}
+.bars i{display:block;width:100%;min-height:.25rem;border-radius:.4rem;background:var(--ink)}
+.toplist{margin:0;padding-left:1.2rem}
+.libbtns{display:flex;flex-wrap:wrap;gap:.5rem}
+.colors{display:flex;gap:.5rem;margin-top:.75rem}
+.colors label{position:relative;cursor:pointer}
+.colors input{position:absolute;opacity:0;inset:0}
+.colors span{display:block;width:2.4rem;height:2.4rem;border-radius:50%;border:3px solid transparent}
+.colors input:checked+span{border-color:var(--ink)}
+.colors input:focus-visible+span{outline:3px solid var(--ink);outline-offset:2px}
+
+.sugwrap{display:flex;align-items:center;gap:.4rem;min-width:0}
+.sugwrap .mini{flex:none;width:2.25rem;min-height:3.25rem;border-radius:.8rem}
+.sugwrap #sugs{flex:1;min-width:0}
+.chip.start{border-style:dashed;background:#fff}
+.aitool svg{width:1.2rem;height:1.2rem;fill:currentColor;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.short .sugwrap .mini{min-height:2.5rem}
+.setsec{margin-bottom:1rem}
+.setsec .seg{margin-bottom:.5rem}
+.setsec p{margin:.4rem 0;color:var(--ink)}
+
+.short .talk,.keys .talk{grid-template-rows:auto minmax(6rem,1fr) auto;grid-template-areas:"fav" "main" "bar"}
+@media (min-width:48rem) and (orientation:landscape){.short .talk,.keys .talk{grid-template-areas:"fav fav" "main hist" "bar hist"}}
+.short .main,.short .col,.keys .main,.keys .col{min-height:0}
+.short .bubble,.keys .bubble{min-height:2.75rem;overflow:hidden}
+.short textarea,.keys textarea{min-height:0}
+.short header{gap:.25rem .5rem}
+.short h1 img{width:2rem;height:2rem}
+.short .tabs button{min-height:2rem}
+.short .hbtn{width:2.25rem;min-height:2.25rem}
+.short .langs button{min-height:2rem}
+.short .actions .speak{min-height:2.75rem}
+.short .tool{min-height:2.25rem;width:2.75rem}
+.short .aitool{width:auto}
+.short .chip,.short .sugs{min-height:2.25rem}
+.short .sugwrap .mini{min-height:2.25rem}

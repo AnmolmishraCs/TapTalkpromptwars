@@ -17,9 +17,14 @@ Rules the interface follows:
 ## How it works
 
 - **Type with your own keyboard.** The sentence box is a normal text field, so the device keyboard, a physical keyboard, voice typing and Hindi keyboards all work. Prefer larger keys? Turn on **Big keys** for TapTalk's own English or Devanagari keyboard.
-- **Suggestions** appear under the sentence, at the cursor. While a word is being typed, the first chips complete that word (two or three choices, from a vocabulary of everyday words plus the person's own words and names). Further chips complete the whole thought. Tap one to accept it, or keep typing to ignore it.
-- **Tools under the sentence:** delete word, clear, and big keys are icon buttons right under the sentence box. Tapping them, Speak or a suggestion keeps the on-screen keyboard open; it only closes when the person moves to another page.
-- **Situations** is a page of ready-made phrases to tap and speak, grouped by where the person is or what they need: at home, at work, need help, at the doctor, out and about, at school, and family and friends. Each situation can hold the person's own phrases too (added with **+ Add**, changed with the pencil), and they can make new situations of their own, such as "At the temple".
+- **Suggestions** appear under the sentence, at the cursor. While a word is being typed, the first chips complete that word (several choices, from a vocabulary of everyday words plus the person's own words and names). Further chips complete the whole thought. Tap one to accept it, or keep typing to ignore it.
+- **Voice feeling:** a face button under the sentence sets how the voice should sound: normal, happy, excited, sad, angry, calm or urgent. The default, **Auto**, picks the feeling from the words ("I need help" sounds urgent, "thank you" sounds happy). On the phone voice this changes speed, pitch and volume; with the optional natural voice it is passed to Gemini as a style. Symbols carry their own feeling.
+- **Tools under the sentence:** delete word, clear, voice feeling, AI and big keys are icon buttons right under the sentence box. Tapping them, Speak or a suggestion keeps the on-screen keyboard open; it only closes when the person moves to another page. With the keyboard open the writing card shrinks first, so the mascot, tools, suggestions and Speak never overlap.
+- **Suggestion slider:** the suggestion row holds up to a dozen chips and has arrow buttons to slide through them. When the box is empty it offers starters for the time of day and the person's most repeated phrases.
+- **Search** (magnifier, top right) looks through favorites, situations, symbols, words and history at once. Tap a result to speak it or use + to put it in the sentence.
+- **Quick phrases** (lightning bolt, top right) opens twelve one-tap phrases from any page: yes, no, please, wait, help me and more.
+- **Settings** (sliders icon): voice speed, the natural voice switch, a usage report (messages spoken, a seven-day chart, most used phrases, typed versus one-tap, voice feelings used), export and import of the whole library as a file, and clear history.
+- **Situations** is a page of ready-made phrases to tap and speak, grouped by where the person is or what they need: quick phrases, at home, at work, need help, at the doctor, out and about, at school, family and friends, feelings, questions, greetings, travelling, and food and drink. Each situation can hold the person's own phrases too (added with **+ Add**, changed with the pencil), and the person can make situations of their own, such as "At the temple", with a color they choose.
 - **Favorites** sit at the top as up to five cards, then a **More** button that slides to a page with all of them in three columns. Tap a card to speak it. A dashed line on the Favorites page separates the five shown on the Talk page from the rest. Add a favorite with the star next to the sentence, from the history, or with **+ Add**. Change one with the pencil, delete it with the bin (there is an Undo), and hold a card then drag it to change the order.
 - **Symbols** is a page of bold pictures (water, food, toilet, pain, help, medicine, feelings, yes, no, wait, home, phone and more). Tap a picture to speak its phrase.
 - **Speaking feedback:** whatever is being spoken (a card, a symbol, a history line, the Speak button) turns light blue and shows moving sound bars beside it, and the mascot shows sound lines.
@@ -63,6 +68,22 @@ What it shows:
 
 Limits: the test user is idealized, the phrase lists are small, and the benchmark counts actions, not time.
 
+## Compared with existing AAC apps
+
+Established apps such as TD Snap, Proloquo and CoughDrop already offer quick phrases, search, customizable page sets, context-based vocabulary, personalization and usage reports. TapTalk does not claim to be first. It takes the ideas that matter most, in a lightweight web app that works in English and Hindi without an account:
+
+| Idea in existing apps | In TapTalk |
+|---|---|
+| Quick, always-available phrases | Quick phrases button on every page, plus favorites on the Talk page |
+| Search | Search across favorites, situations, symbols, words and history |
+| Customizable page sets | Own situations with their own phrases and colors, own favorites and words, reordering, and export and import of the library |
+| Context-oriented vocabulary | Situations, plus starters that follow the time of day and the person's habits |
+| Extensive vocabulary and personalization | Thirteen situations, a few hundred phrases, a few hundred common words, learning from what the person says, and personal words and names |
+| Usage and reporting | Usage report in settings, kept on the device |
+| Natural, expressive voices | Voice feeling, voice speed, best-voice choice, and an optional AI natural voice |
+
+The README is not a feature-by-feature comparison; these are the ideas TapTalk borrows in spirit, not copies of any product.
+
 ## Design
 
 Light lavender page, white and pastel cards, black actions, rounded rectangles everywhere, Poppins type (it covers Hindi too), bold icons, and chunky tiles inspired by Duolingo. Colors carry meaning instead of decorating: favorites are yellow, each situation has its own color, symbols are green, words are lilac, and a tapped or speaking tile turns light blue. The character and logo are the yellow speech-bubble mascot: it looks up toward the sentence and shows sound lines while it speaks. Gestalt principles guide the layout:
@@ -77,7 +98,7 @@ The layout reflows: stacked in portrait, two columns in landscape, and compact w
 ## Run, test, deploy
 
 ```bash
-npm test          # 40 unit tests, no install needed
+npm test          # 47 unit tests, no install needed
 npm start         # http://localhost:8080
 npm run bench     # the evaluation above
 ```
@@ -94,7 +115,7 @@ Large touch targets, high contrast, visible keyboard focus, labels for screen re
 
 ## Security
 
-No accounts. Sentences, history, favorites and words stay in the browser's local storage on the device. Outside requests are the Poppins font from Google Fonts and, only when the user turns AI suggestions or natural voice on, the server's calls to Gemini. The Content-Security-Policy allows nothing else. The server only serves files from `public/` and rejects path tricks.
+No accounts. Sentences, history, favorites, words, usage data and settings stay in the browser's local storage on the device. Outside requests are the Poppins font from Google Fonts and, only when the user turns AI suggestions or natural voice on, the server's calls to Gemini. The Content-Security-Policy allows nothing else. The server only serves files from `public/` and rejects path tricks.
 
 ## Assumptions
 

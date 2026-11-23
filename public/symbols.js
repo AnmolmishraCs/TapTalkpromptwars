@@ -26,3 +26,6 @@ export const SYMBOLS = [
   s('love', 'Love', 'प्यार', 'I love you', 'मुझे आपसे बहुत प्यार है', '<path d="M24 41S6 30 6 17a9 9 0 0118-3 9 9 0 0118 3c0 13-18 24-18 24z"/>'),
   s('thanks', 'Thanks', 'धन्यवाद', 'Thank you very much', 'बहुत धन्यवाद', '<rect x="7" y="19" width="34" height="22"/><path d="M5 12h38v7H5zM24 12v29"/><path d="M24 12c-3-8-12-7-10-3s7 3 10 3zM24 12c3-8 12-7 10-3s-7 3-10 3z"/>'),
 ]
+
+const EMO = { happy: 'happy', sad: 'sad', pain: 'sad', help: 'urgent', tired: 'calm', love: 'happy', thanks: 'happy', stop: 'urgent', wait: 'calm', sleep: 'calm' }
+for (const sym of SYMBOLS) sym.emo = EMO[sym.id]

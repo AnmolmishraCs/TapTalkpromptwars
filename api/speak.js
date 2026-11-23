@@ -1,4 +1,5 @@
 import { send, limited, readJson } from './_util.js'
+import { EMOTIONS } from '../public/emotion.js'
 
 const MODEL = () => process.env.GEMINI_TTS_MODEL || 'gemini-3.1-flash-tts-preview'
 const VOICE = () => process.env.GEMINI_VOICE || 'Kore'
@@ -15,7 +16,7 @@ export default async function handler(req, res) {
   } catch {
     return send(res, 400, { error: 'Bad request' })
   }
-  const { text, lang } = body ?? {}
+  const { text, lang, emotion } = body ?? {}
   if (typeof text !== 'string' || !text.trim() || text.length > 300 || !['en', 'hi'].includes(lang)) {
     return send(res, 400, { error: 'Bad request' })
   }
@@ -31,7 +32,7 @@ export default async function handler(req, res) {
       signal: controller.signal,
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: `Read this aloud clearly and naturally, exactly as written, in a calm friendly voice: ${text}` }] }],
+        contents: [{ parts: [{ text: `${(EMOTIONS[emotion] ?? EMOTIONS.neutral).style}, reading exactly as written: ${text}` }] }],
         generationConfig: {
           responseModalities: ['AUDIO'],
           speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: VOICE() } } },

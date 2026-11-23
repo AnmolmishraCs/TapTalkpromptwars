@@ -1,7 +1,12 @@
 import { createEngine } from './predict.js'
 import { toDevanagari, toRoman } from './translit.js'
 import { hindiSuggest, convertTail } from './hindi.js'
-import { SITUATIONS } from './phrases.js'
+import { SITUATIONS, TONES_BY_ID } from './phrases.js'
+import { EMOTIONS, emotionOf } from './emotion.js'
+import { search } from './search.js'
+import { summarize } from './insights.js'
+import { contextPhrases, frequent } from './context.js'
+import { mergeLibrary } from './library.js'
 import { SYMBOLS } from './symbols.js'
 import { reorder } from './order.js'
 
@@ -9,7 +14,7 @@ const $ = id => document.getElementById(id)
 const MODE = ['A', 'B', 'C', 'D'].find(v => v === new URLSearchParams(location.search).get('v')?.toUpperCase()) || 'C'
 const LANGS = { en: 'English', hi: 'हिन्दी' }
 const PAGES = { talk: 0, sits: 1, syms: 2, favs: 3, words: 4 }
-const TONE = { home: 'peach', work: 'blue', help: 'pink', doctor: 'mint', out: 'sun', school: 'lilac', people: 'mint' }
+const TONES = ['peach', 'mint', 'lilac', 'blue', 'sun', 'pink']
 const T = {
   en: {
     ph: 'What do you want to say?', speak: 'Speak', del: 'Delete word', wipe: 'Clear', big: 'Big keys', space: 'space',
@@ -29,6 +34,14 @@ const T = {
     aiLabel: 'AI suggestions', aiAsk: 'Turn on AI suggestions?', aiYes: 'Turn on', aiNo: 'Not now',
     aiBody: 'What you type is sent to Google Gemini so it can suggest better completions. TapTalk does not store it. Turn it off any time with the AI button.',
     aiFail: 'AI is unavailable right now. Built-in suggestions are still working.',
+    findLabel: 'Search', findPh: 'Search phrases, symbols and words', noResults: 'Nothing found', addToSentence: 'Add to sentence',
+    src: { fav: 'Favorite', sit: 'Situation', sym: 'Symbol', word: 'My word', hist: 'Spoken' },
+    quickLabel: 'Quick phrases', setLabel: 'Settings', close: 'Close', emoLabel: 'Voice feeling', emoTitle: 'How should it sound?',
+    emo: { auto: 'Auto', neutral: 'Normal', happy: 'Happy', excited: 'Excited', sad: 'Sad', angry: 'Angry', calm: 'Calm', urgent: 'Urgent' },
+    speed: 'Voice speed', slow: 'Slow', normal: 'Normal', fast: 'Fast', naturalVoice: 'Natural voice (AI)',
+    usage: 'Usage', spoken: 'Spoken', today: 'Today', avgWords: 'Words each', topPhrases: 'Most used', feelingsUsed: 'Voice feelings', typedLine: 'Typed', tapLine: 'One-tap', nothingYet: 'Nothing yet',
+    library: 'My library', exportLib: 'Export', importLib: 'Import', clearHist: 'Clear history', clearUse: 'Clear usage',
+    imported: 'Imported', importFail: 'That file could not be read', colorLabel: 'Color',
   },
   hi: {
     ph: 'आप क्या कहना चाहते हैं?', speak: 'बोलें', del: 'शब्द हटाएँ', wipe: 'मिटाएँ', big: 'बड़े बटन', space: 'स्पेस',
@@ -48,6 +61,14 @@ const T = {
     aiLabel: 'AI सुझाव', aiAsk: 'AI सुझाव चालू करें?', aiYes: 'चालू करें', aiNo: 'अभी नहीं',
     aiBody: 'आप जो लिखते हैं वह बेहतर सुझावों के लिए Google Gemini को भेजा जाता है। TapTalk इसे सहेजता नहीं है। AI बटन से कभी भी बंद कर सकते हैं।',
     aiFail: 'AI अभी उपलब्ध नहीं है। सामान्य सुझाव काम कर रहे हैं।',
+    findLabel: 'खोजें', findPh: 'वाक्य, प्रतीक और शब्द खोजें', noResults: 'कुछ नहीं मिला', addToSentence: 'वाक्य में जोड़ें',
+    src: { fav: 'पसंदीदा', sit: 'स्थिति', sym: 'प्रतीक', word: 'मेरा शब्द', hist: 'बोला गया' },
+    quickLabel: 'तुरंत बोलें', setLabel: 'सेटिंग', close: 'बंद करें', emoLabel: 'आवाज़ का भाव', emoTitle: 'आवाज़ कैसी हो?',
+    emo: { auto: 'अपने आप', neutral: 'सामान्य', happy: 'खुश', excited: 'उत्साहित', sad: 'उदास', angry: 'गुस्सा', calm: 'शांत', urgent: 'ज़रूरी' },
+    speed: 'आवाज़ की गति', slow: 'धीमी', normal: 'सामान्य', fast: 'तेज़', naturalVoice: 'प्राकृतिक आवाज़ (AI)',
+    usage: 'उपयोग', spoken: 'बोले गए', today: 'आज', avgWords: 'शब्द प्रति वाक्य', topPhrases: 'सबसे ज़्यादा', feelingsUsed: 'आवाज़ के भाव', typedLine: 'लिखे गए', tapLine: 'एक टैप', nothingYet: 'अभी कुछ नहीं',
+    library: 'मेरी लाइब्रेरी', exportLib: 'निर्यात', importLib: 'आयात', clearHist: 'इतिहास मिटाएँ', clearUse: 'उपयोग मिटाएँ',
+    imported: 'आयात हो गया', importFail: 'यह फ़ाइल पढ़ी नहीं जा सकी', colorLabel: 'रंग',
   },
 }
 const LAYOUT = {
@@ -68,7 +89,23 @@ const ICON = {
   select: '<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8 12l3 3 5-6"/>',
   top: '<path d="M5 4h14M12 20V9M7 14l5-5 5 5"/>',
   close: '<path d="M6 6l12 12M18 6L6 18"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="M16 16l5 5"/>',
+  bolt: '<path d="M13 3L5 14h6l-1 7 8-11h-6z"/>',
+  sliders: '<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  prev: '<path d="M15 5l-7 7 7 7"/>',
+  next: '<path d="M9 5l7 7-7 7"/>',
 }
+const FACES = {
+  neutral: '<circle cx="24" cy="24" r="18"/><path d="M16 31h16"/><circle class="dot" cx="17" cy="20" r="2"/><circle class="dot" cx="31" cy="20" r="2"/>',
+  happy: '<circle cx="24" cy="24" r="18"/><path d="M15 28c2 7 16 7 18 0"/><circle class="dot" cx="17" cy="19" r="2"/><circle class="dot" cx="31" cy="19" r="2"/>',
+  excited: '<circle cx="24" cy="24" r="18"/><path d="M14 27h20c0 8-4 12-10 12s-10-4-10-12z"/><circle class="dot" cx="17" cy="18" r="2"/><circle class="dot" cx="31" cy="18" r="2"/>',
+  sad: '<circle cx="24" cy="24" r="18"/><path d="M16 34c2-6 14-6 16 0"/><circle class="dot" cx="17" cy="19" r="2"/><circle class="dot" cx="31" cy="19" r="2"/>',
+  angry: '<circle cx="24" cy="24" r="18"/><path d="M12 15l9 4M36 15l-9 4M17 34c2-4 12-4 14 0"/><circle class="dot" cx="17" cy="23" r="2"/><circle class="dot" cx="31" cy="23" r="2"/>',
+  calm: '<circle cx="24" cy="24" r="18"/><path d="M13 22c2-3 6-3 8 0M27 22c2-3 6-3 8 0M18 31c3 3 9 3 12 0"/>',
+  urgent: '<path d="M24 5L44 41H4z"/><path d="M24 18v11M24 35v.5"/>',
+}
+const face = (name, cls = 'face') => `<svg class="${cls}" viewBox="0 0 48 48" aria-hidden="true">${FACES[name]}</svg>`
 const svg = inner => `<svg viewBox="0 0 24 24" aria-hidden="true">${inner}</svg>`
 const SPARK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z"/></svg>'
 
@@ -118,6 +155,10 @@ let voiceOn = false
 let audioCtx
 let source
 let curPage = 0
+let voiceAvail = false
+let emotion = get('taptalk-emotion', 'auto')
+let speed = get('taptalk-speed', 1)
+const log = get('taptalk-log', [])
 let speakId = 0
 let speaking = null
 let toastTimer = 0
@@ -199,9 +240,10 @@ function ago(at) {
 
 function toast(message, undo) {
   $('tmsg').textContent = message
+  $('tundo').hidden = !undo
   $('tundo').textContent = T[lang].undo
   $('tundo').onclick = () => {
-    undo()
+    undo?.()
     $('toast').hidden = true
   }
   $('toast').hidden = false
@@ -241,22 +283,25 @@ function pickVoice(tag) {
   return speechSynthesis.getVoices().filter(v => v.lang.toLowerCase().startsWith(base)).sort((a, b) => score(b) - score(a))[0]
 }
 
-function deviceSpeak(text, hindi, id) {
+function deviceSpeak(text, hindi, id, emo) {
+  const e = EMOTIONS[emo] ?? EMOTIONS.neutral
   const u = new SpeechSynthesisUtterance(text)
   u.lang = hindi ? 'hi-IN' : 'en-IN'
   const voice = pickVoice(u.lang)
   if (voice) u.voice = voice
-  u.rate = hindi ? 0.9 : 0.95
+  u.rate = Math.min(2, Math.max(0.5, e.rate * (hindi ? 0.95 : 1) * speed))
+  u.pitch = e.pitch
+  u.volume = e.volume
   u.onend = u.onerror = () => id === speakId && stopWave()
   speechSynthesis.cancel()
   speechSynthesis.speak(u)
 }
 
-async function natural(text, l, id) {
+async function natural(text, l, id, emo) {
   const r = await fetch('/api/speak', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, lang: l }),
+    body: JSON.stringify({ text, lang: l, emotion: emo }),
   })
   if (!r.ok) throw new Error(String(r.status))
   const { pcm, rate } = await r.json()
@@ -273,7 +318,7 @@ async function natural(text, l, id) {
   source.start()
 }
 
-function say(str, host) {
+function say(str, host, src = 'tap', emoOverride) {
   stopWave()
   try {
     source?.stop()
@@ -281,6 +326,9 @@ function say(str, host) {
   const id = ++speakId
   const hindi = lang === 'hi' || isDeva(str)
   const text = hindi ? toDevanagari(str) : str
+  const emo = emoOverride ?? (emotion === 'auto' ? emotionOf(text) : emotion)
+  log.push({ t: str.slice(0, 120), at: Date.now(), src, emo, l: lang })
+  put('taptalk-log', log.slice(-1000))
   setTimeout(() => id === speakId && stopWave(), 4000 + str.length * 150)
   const wave = el('span', 'wave')
   wave.append(el('i'), el('i'), el('i'))
@@ -293,9 +341,9 @@ function say(str, host) {
   if (voiceOn) {
     audioCtx ??= new AudioContext()
     audioCtx.resume()
-    natural(text, hindi ? 'hi' : 'en', id).catch(() => {
+    natural(text, hindi ? 'hi' : 'en', id, emo).catch(() => {
       if (id !== speakId) return
-      if ('speechSynthesis' in window) deviceSpeak(text, hindi, id)
+      if ('speechSynthesis' in window) deviceSpeak(text, hindi, id, emo)
       else stopWave()
     })
     return
@@ -305,7 +353,7 @@ function say(str, host) {
     stopWave()
     return
   }
-  deviceSpeak(text, hindi, id)
+  deviceSpeak(text, hindi, id, emo)
 }
 
 const labelFor = (text, insert) => (/\S$/.test(text) && !insert.startsWith(' ') ? text.match(/\S+$/)[0] : '') + insert.trim()
@@ -318,18 +366,36 @@ function aiItems(b) {
   return aiCache.items.slice(0, 2).map(c => ({ label: labelFor(converted, c), replace: partial.length, text: lead + c }))
 }
 
+function starters() {
+  const seen = new Set()
+  return [...frequent(history, lang), ...contextPhrases(new Date(), lang)]
+    .filter(t => !seen.has(t) && seen.add(t))
+    .slice(0, 4)
+    .map(t => ({ label: t, replace: 0, text: t }))
+}
+
+function updateArrows() {
+  const box = $('sugs')
+  $('sprev').hidden = box.scrollLeft < 4
+  $('snext').hidden = box.scrollLeft + box.clientWidth >= box.scrollWidth - 4
+}
+
 function renderSugs() {
   prevBefore = before()
   const ai = aiOn && aiCache.text === prevBefore ? aiItems(prevBefore) : []
-  const taken = new Set(ai.map(i => i.label))
+  const start = prevBefore.trim() ? [] : starters()
+  const taken = new Set([...ai, ...start].map(i => i.label))
   const local = items(prevBefore).filter(i => !taken.has(i.label))
   $('sugs').replaceChildren(
     ...ai.map(i => button(i.label, () => accept(i), 'chip ai-chip')),
+    ...start.map(i => button(i.label, () => accept(i), 'chip start')),
     ...local.map(i => button(i.label, () => accept(i), 'chip'))
   )
+  $('sugs').scrollLeft = 0
   const on = favs.includes(ta.value.trim())
   $('star').setAttribute('aria-pressed', on)
   $('star').setAttribute('aria-label', on ? T[lang].starDel : T[lang].starAdd)
+  requestAnimationFrame(updateArrows)
   askAI(prevBefore)
 }
 
@@ -397,13 +463,12 @@ async function probe(path) {
 function setVoice(on) {
   voiceOn = on
   put('taptalk-voice', on)
-  $('voice').setAttribute('aria-pressed', on)
 }
 
 async function probeAI() {
   const [ai, voice] = await Promise.all([probe('/api/ai'), probe('/api/speak')])
   $('ai').hidden = !ai
-  $('voice').hidden = !voice
+  voiceAvail = voice
   if (ai && get('taptalk-ai', false)) setAI(true)
   if (voice && get('taptalk-voice', false)) setVoice(true)
 }
@@ -414,7 +479,7 @@ function favRow() {
     return
   }
   const cards = favs.slice(0, 5).map((f, i) => {
-    const b = button('', () => say(f, b), 'favcard sun')
+    const b = button('', () => say(f, b, 'favorite'), 'favcard sun')
     b.dataset.i = i
     b.lang = isDeva(f) ? 'hi' : 'en'
     b.append(el('span', 'clamp', f))
@@ -496,6 +561,7 @@ const addCard = tap => {
 const adder = tap => (sel.kind ? [] : [addCard(tap)])
 
 const allSits = () => [...SITUATIONS, ...sits.custom]
+const toneOf = s => s.tone ?? TONES_BY_ID[s.id] ?? 'lilac'
 const sitLabel = s => s[lang] ?? s.name
 const ownOf = s => (s.p ? (sits.extra[s.id] ??= []) : s.phrases)
 
@@ -503,14 +569,14 @@ function sitPage() {
   const all = allSits()
   const cur = all.find(s => s.id === sit) ?? all[0]
   sit = cur.id
-  const tone = TONE[cur.id] ?? 'lilac'
+  const tone = toneOf(cur)
   const nav = all.map(s => {
     const b = button(sitLabel(s), () => {
       sit = s.id
       if (sel.kind === 'sits') sel.picked.clear()
       sitPage()
       selUI()
-    }, `sitbtn dot-${TONE[s.id] ?? 'lilac'}`)
+    }, `sitbtn dot-${toneOf(s)}`)
     b.setAttribute('aria-pressed', s.id === sit)
     return b
   })
@@ -524,15 +590,15 @@ function sitPage() {
   const own = ownOf(cur)
   const builtIn = cur.p?.[lang] ?? []
   $('sitgrid').replaceChildren(
-    ...builtIn.map(t => card(t, tone, host => say(t, host))),
-    ...own.map((t, j) => card(t, tone, host => say(t, host), j, { edit: () => editPhrase(own, j), del: () => removeAt(own, j, saveSits) }, 'sits')),
+    ...builtIn.map(t => card(t, tone, host => say(t, host, cur.id === 'quick' ? 'quick' : 'situation'))),
+    ...own.map((t, j) => card(t, tone, host => say(t, host, cur.id === 'quick' ? 'quick' : 'situation'), j, { edit: () => editPhrase(own, j), del: () => removeAt(own, j, saveSits) }, 'sits')),
     ...adder(() => editPhrase(own, -1))
   )
 }
 
 function symPage() {
   $('symgrid').replaceChildren(...SYMBOLS.map(s => {
-    const b = button('', () => say(s.say[lang], b), 'sym mint')
+    const b = button('', () => say(s.say[lang], b, 'symbol', s.emo), 'sym mint')
     b.lang = lang
     const pic = el('span', 'symic')
     pic.innerHTML = `<svg viewBox="0 0 48 48" aria-hidden="true">${s.d}</svg>`
@@ -542,7 +608,7 @@ function symPage() {
 }
 
 function pages() {
-  const favCards = favs.map((f, i) => card(f, 'sun', host => say(f, host), i, { edit: () => editFav(i), del: () => removeAt(favs, i, saveFavs) }, 'favs'))
+  const favCards = favs.map((f, i) => card(f, 'sun', host => say(f, host, 'favorite'), i, { edit: () => editFav(i), del: () => removeAt(favs, i, saveFavs) }, 'favs'))
   if (favCards.length >= 5) favCards.splice(5, 0, el('div', 'sep'))
   $('favgrid').replaceChildren(...favCards, ...adder(() => editFav(-1)))
   $('namegrid').replaceChildren(
@@ -576,7 +642,7 @@ function renderHistory() {
     if (open === key && !selecting) {
       const a = el('div', 'h-actions')
       a.append(
-        button(T[lang].again, () => say(h.t, b)),
+        button(T[lang].again, () => say(h.t, b, 'history')),
         button(T[lang].edit, () => {
           ta.value = h.t
           go(PAGES.talk)
@@ -644,7 +710,7 @@ function speak() {
   let said = ta.value.trim()
   if (!said) return
   if (lang === 'hi') said = toDevanagari(said)
-  say(said, $('speak'))
+  say(said, $('speak'), 'typed')
   history.push({ t: said, at: Date.now(), l: lang })
   saveHistory()
   if (lang === 'hi') {
@@ -668,7 +734,7 @@ function buildKeys() {
 }
 
 const dlg = $('dlg')
-function ask(title, value, canDelete) {
+function ask(title, value, canDelete, opts = {}) {
   const t = T[lang]
   $('dtitle').textContent = title
   $('dtext').value = value
@@ -677,13 +743,30 @@ function ask(title, value, canDelete) {
   $('ddel').textContent = t.remove
   $('dcancel').textContent = t.cancel
   $('ddel').hidden = !canDelete
+  const colors = $('dcolors')
+  colors.hidden = !opts.color
+  if (opts.color) {
+    colors.setAttribute('aria-label', t.colorLabel)
+    colors.replaceChildren(...TONES.map(tone => {
+      const label = el('label')
+      const input = el('input')
+      input.type = 'radio'
+      input.name = 'tone'
+      input.value = tone
+      input.checked = tone === opts.color
+      input.setAttribute('aria-label', tone)
+      label.append(input, el('span', tone))
+      return label
+    }))
+  }
   dlg.returnValue = ''
   dlg.showModal()
   return new Promise(resolve =>
     dlg.addEventListener('close', () => {
       const v = $('dtext').value.trim()
-      if (dlg.returnValue === 'save' && v) resolve({ action: 'save', value: lang === 'hi' ? toDevanagari(v) : v })
-      else if (dlg.returnValue === 'delete') resolve({ action: 'delete' })
+      if (dlg.returnValue === 'save' && v) {
+        resolve({ action: 'save', value: lang === 'hi' ? toDevanagari(v) : v, tone: colors.querySelector('input:checked')?.value })
+      } else if (dlg.returnValue === 'delete') resolve({ action: 'delete' })
       else resolve(null)
     }, { once: true })
   )
@@ -705,11 +788,13 @@ const editWord = i => edit(names, saveNames, T[lang][i < 0 ? 'addWord' : 'editWo
 const editPhrase = (own, j) => edit(own, saveSits, T[lang][j < 0 ? 'addPhrase' : 'editPhrase'], j)
 
 async function editSit(cur) {
-  const r = await ask(T[lang][cur ? 'editSit' : 'addSit'], cur ? cur.name : '', false)
+  const r = await ask(T[lang][cur ? 'editSit' : 'addSit'], cur ? cur.name : '', false, { color: cur ? toneOf(cur) : 'lilac' })
   if (!r) return
-  if (cur) cur.name = r.value
-  else {
-    const s = { id: `c${Date.now()}`, name: r.value, phrases: [] }
+  if (cur) {
+    cur.name = r.value
+    cur.tone = r.tone
+  } else {
+    const s = { id: `c${Date.now()}`, name: r.value, tone: r.tone, phrases: [] }
     sits.custom.push(s)
     sit = s.id
   }
@@ -783,7 +868,7 @@ function setLang(l) {
   ta.lang = l
   ta.placeholder = t.ph
   $('speak').querySelector('.lbl').textContent = t.speak
-  for (const [id, label] of [['delword', t.del], ['wipe', t.wipe], ['big', t.big], ['voice', t.voiceLabel], ['ai', t.aiLabel]]) {
+  for (const [id, label] of [['delword', t.del], ['wipe', t.wipe], ['big', t.big], ['ai', t.aiLabel], ['find', t.findLabel], ['quick', t.quickLabel], ['settings', t.setLabel]]) {
     $(id).setAttribute('aria-label', label)
     $(id).title = label
   }
@@ -793,6 +878,7 @@ function setLang(l) {
   $('seldel').querySelector('.lbl').textContent = t.remove
   $('seldone').setAttribute('aria-label', t.done)
   selUI()
+  setEmotion(emotion)
   $('rh').textContent = t.recent
   $('sh').textContent = t.sits
   $('ss').textContent = t.sitsSub
@@ -817,7 +903,6 @@ $('speak').innerHTML = svg(ICON.speaker) + '<span class="lbl"></span>'
 $('delword').innerHTML = svg(ICON.word)
 $('wipe').innerHTML = svg(ICON.clear)
 $('big').innerHTML = svg(ICON.keys)
-$('voice').innerHTML = svg(ICON.speaker)
 for (const b of document.querySelectorAll('.selbtn')) {
   b.innerHTML = svg(ICON.select) + '<span class="lbl"></span>'
   b.onclick = () => startSel(b.dataset.kind)
@@ -857,14 +942,231 @@ $('seldel').onclick = () => {
     renderAll()
   })
 }
-$('voice').onclick = async () => {
-  if (voiceOn) return setVoice(false)
-  if (!get('taptalk-voice-ok', false)) {
-    if (!(await confirmAI('v'))) return
-    put('taptalk-voice-ok', true)
-  }
-  setVoice(true)
+function setEmotion(e) {
+  emotion = e
+  put('taptalk-emotion', e)
+  const t = T[lang]
+  $('emo').innerHTML = e === 'auto' ? SPARK : face(e)
+  $('emo').setAttribute('aria-label', `${t.emoLabel}: ${t.emo[e]}`)
+  $('emo').title = `${t.emoLabel}: ${t.emo[e]}`
 }
+
+function openEmo() {
+  const t = T[lang]
+  $('emotitle').textContent = t.emoTitle
+  $('emoclose').textContent = t.close
+  $('emogrid').replaceChildren(...['auto', ...Object.keys(EMOTIONS)].map(e => {
+    const b = button('', () => {
+      setEmotion(e)
+      $('emodlg').close()
+    }, 'emo')
+    b.innerHTML = e === 'auto' ? SPARK.replace('<svg ', '<svg class="spark" ') : face(e, 'faceico')
+    b.append(el('span', '', t.emo[e]))
+    b.setAttribute('aria-pressed', e === emotion)
+    return b
+  }))
+  $('emodlg').showModal()
+}
+
+function pools() {
+  return [
+    { source: 'fav', tone: 'sun', items: favs },
+    ...allSits().map(s => ({ source: 'sit', tone: toneOf(s), items: [...(s.p?.[lang] ?? []), ...ownOf(s)] })),
+    { source: 'sym', tone: 'mint', items: SYMBOLS.map(s => ({ text: s[lang], say: s.say[lang] })) },
+    { source: 'word', tone: 'lilac', items: names },
+    { source: 'hist', tone: 'blue', items: history.filter(h => h.l === lang).map(h => h.t) },
+  ]
+}
+
+function renderFind() {
+  const q = $('findq').value
+  const hits = search(lang === 'hi' ? [q, toDevanagari(q)] : [q], pools())
+  if (!hits.length) {
+    $('findres').replaceChildren(...(q.trim() ? [el('p', '', T[lang].noResults)] : []))
+    return
+  }
+  $('findres').replaceChildren(...hits.map(h => {
+    const row = el('div', 'res')
+    const b = button('', () => say(h.say, b, 'search'), `card-say ${h.tone}`)
+    b.lang = isDeva(h.say) ? 'hi' : 'en'
+    b.append(el('span', 'clamp', h.text), el('small', '', T[lang].src[h.source]))
+    row.append(b, icon(() => {
+      insert(h.say + ' ')
+      $('finddlg').close()
+      go(PAGES.talk)
+    }, 'mini', 'plus', T[lang].addToSentence))
+    return row
+  }))
+}
+
+function openQuick() {
+  const phrases = [...SITUATIONS[0].p[lang], ...(sits.extra.quick ?? [])]
+  $('quicktitle').textContent = T[lang].quickLabel
+  $('quickclose').textContent = T[lang].close
+  $('quickgrid').replaceChildren(...phrases.map(t => {
+    const b = button('', () => say(t, b, 'quick'), 'card-say sun')
+    b.lang = isDeva(t) ? 'hi' : 'en'
+    b.append(el('span', 'clamp', t))
+    return b
+  }))
+  $('quickdlg').showModal()
+}
+
+function exportLib() {
+  const data = { version: 1, favs, names, sits: { extra: sits.extra, custom: sits.custom } }
+  const a = el('a')
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }))
+  a.download = 'taptalk-library.json'
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000)
+}
+
+function wipeHistory() {
+  const snapshot = [...history]
+  history.splice(0)
+  saveHistory()
+  build()
+  renderAll()
+  $('setdlg').close()
+  toast(T[lang].deleted, () => {
+    history.splice(0, 0, ...snapshot)
+    saveHistory()
+    build()
+    renderAll()
+  })
+}
+
+function renderSettings() {
+  const t = T[lang]
+  const section = (title, ...kids) => {
+    const d = el('div', 'setsec')
+    d.append(el('h3', '', title), ...kids)
+    return d
+  }
+  const seg = el('div', 'seg')
+  for (const [v, label] of [[0.8, t.slow], [1, t.normal], [1.2, t.fast]]) {
+    const b = button(label, () => {
+      speed = v
+      put('taptalk-speed', v)
+      renderSettings()
+    })
+    b.setAttribute('aria-pressed', speed === v)
+    seg.append(b)
+  }
+  const voiceBtn = []
+  if (voiceAvail) {
+    const b = button(t.naturalVoice, async () => {
+      if (voiceOn) setVoice(false)
+      else {
+        if (!get('taptalk-voice-ok', false)) {
+          if (!(await confirmAI('v'))) return
+          put('taptalk-voice-ok', true)
+        }
+        setVoice(true)
+      }
+      renderSettings()
+    })
+    b.setAttribute('aria-pressed', voiceOn)
+    voiceBtn.push(b)
+  }
+  const s = summarize(log)
+  const stats = el('div', 'stats')
+  for (const [n, label] of [[s.total, t.spoken], [s.today, t.today], [s.avgWords, t.avgWords]]) {
+    const d = el('div', 'stat')
+    d.append(el('b', '', String(n)), el('span', '', label))
+    stats.append(d)
+  }
+  const max = Math.max(1, ...s.byDay.map(d => d.count))
+  const bars = el('div', 'bars')
+  for (const d of s.byDay) {
+    const col = el('div')
+    const bar = el('i')
+    bar.style.height = `${Math.round((d.count / max) * 80)}%`
+    col.append(el('span', '', String(d.count)), bar, el('span', '', new Date(d.start).toLocaleDateString(lang, { weekday: 'short' })))
+    bars.append(col)
+  }
+  const top = el('ol', 'toplist')
+  s.top.forEach(([text, n]) => top.append(el('li', '', `${text} (${n})`)))
+  if (!s.top.length) top.replaceWith(el('p', '', t.nothingYet))
+  const count = key => s.sources.find(([k]) => k === key)?.[1] ?? 0
+  const lib = el('div', 'libbtns')
+  lib.append(
+    button(t.exportLib, exportLib),
+    button(t.importLib, () => $('importfile').click()),
+    button(t.clearHist, wipeHistory),
+    button(t.clearUse, () => {
+      log.splice(0)
+      put('taptalk-log', [])
+      renderSettings()
+    })
+  )
+  $('settitle').textContent = t.setLabel
+  $('setclose').textContent = t.close
+  $('setbody').replaceChildren(
+    section(t.speed, seg, ...voiceBtn),
+    section(t.usage, stats, bars,
+      el('p', '', `${t.typedLine}: ${count('typed')}   ${t.tapLine}: ${s.total - count('typed')}`),
+      s.emotions.length ? el('p', '', `${t.feelingsUsed}: ${s.emotions.map(([e, n]) => `${t.emo[e] ?? e} ${n}`).join(', ')}`) : el('span'),
+      el('h3', '', t.topPhrases), s.top.length ? top : el('p', '', t.nothingYet)),
+    section(t.library, lib)
+  )
+}
+
+$('importfile').onchange = async () => {
+  const file = $('importfile').files[0]
+  $('importfile').value = ''
+  if (!file) return
+  try {
+    if (file.size > 500000) throw new Error('too large')
+    const merged = mergeLibrary({ favs, names, sits }, JSON.parse(await file.text()))
+    favs.splice(0, favs.length, ...merged.favs)
+    names.splice(0, names.length, ...merged.names)
+    sits.extra = merged.sits.extra
+    sits.custom.splice(0, sits.custom.length, ...merged.sits.custom)
+    saveFavs()
+    saveNames()
+    saveSits()
+    build()
+    renderAll()
+    $('setdlg').close()
+    toast(T[lang].imported)
+  } catch {
+    $('note').textContent = T[lang].importFail
+  }
+}
+
+$('find').innerHTML = svg(ICON.search)
+$('quick').innerHTML = svg(ICON.bolt)
+$('settings').innerHTML = svg(ICON.sliders)
+$('sprev').innerHTML = svg(ICON.prev)
+$('snext').innerHTML = svg(ICON.next)
+$('emo').onclick = openEmo
+$('find').onclick = () => {
+  $('findtitle').textContent = T[lang].findLabel
+  $('findq').placeholder = T[lang].findPh
+  $('findclose').textContent = T[lang].close
+  $('findq').value = ''
+  renderFind()
+  $('finddlg').showModal()
+  $('findq').focus()
+}
+$('findq').addEventListener('input', renderFind)
+$('quick').onclick = openQuick
+$('settings').onclick = () => {
+  renderSettings()
+  $('setdlg').showModal()
+}
+for (const [id, dialog] of [['findclose', 'finddlg'], ['quickclose', 'quickdlg'], ['emoclose', 'emodlg'], ['setclose', 'setdlg']]) {
+  $(id).onclick = () => $(dialog).close()
+}
+for (const d of document.querySelectorAll('dialog.sheet')) {
+  d.addEventListener('click', e => {
+    if (e.target === d) d.close()
+  })
+}
+$('sprev').onclick = () => $('sugs').scrollBy({ left: -$('sugs').clientWidth * 0.8, behavior: reduce ? 'auto' : 'smooth' })
+$('snext').onclick = () => $('sugs').scrollBy({ left: $('sugs').clientWidth * 0.8, behavior: reduce ? 'auto' : 'smooth' })
+$('sugs').addEventListener('scroll', updateArrows)
 $('ai').innerHTML = SPARK + '<span>AI</span>'
 $('ai').onclick = async () => {
   if (aiOn) return setAI(false)
@@ -943,7 +1245,7 @@ document.addEventListener('pointerdown', e => {
 document.addEventListener('pointerdown', () => {
   kbWas = document.activeElement === ta
 }, true)
-for (const q of ['.tools', '.actions', '#sugs', '#board']) document.querySelector(q).addEventListener('mousedown', e => e.preventDefault())
+for (const q of ['.tools', '.actions', '.sugwrap', '#board']) document.querySelector(q).addEventListener('mousedown', e => e.preventDefault())
 
 const fit = () => {
   const h = window.visualViewport?.height ?? innerHeight
