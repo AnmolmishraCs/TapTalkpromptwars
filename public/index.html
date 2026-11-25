@@ -16,6 +16,8 @@
   <script type="module" src="app.js"></script>
 </head>
 <body>
+  <a class="skip" href="#main">Skip to content</a>
+  <p id="sr" class="sr" role="status"></p>
   <div id="app">
     <header>
       <h1><img src="logo.png" alt="" width="44" height="44"><span>TapTalk</span></h1>
@@ -27,8 +29,10 @@
         <div class="langs" id="langs" role="group" aria-label="Language"></div>
       </div>
     </header>
+    <main id="main" tabindex="-1">
     <div class="pager" id="pager">
-      <section class="slide talk" aria-label="Talk">
+      <section class="slide talk" aria-labelledby="th">
+        <h2 id="th" class="sr"></h2>
         <div class="favrow" id="favrow"></div>
         <div class="main">
           <div class="peek">
@@ -107,8 +111,9 @@
         <div class="grid" id="namegrid"></div>
       </section>
     </div>
+    </main>
   </div>
-  <div id="selbar" class="selbar" hidden>
+  <div id="selbar" class="selbar" role="status" hidden>
     <span id="selcount"></span>
     <button id="selall" type="button"></button>
     <button id="seltop" type="button"></button>
@@ -118,6 +123,7 @@
   <div id="toast" class="toast" role="status" hidden>
     <span id="tmsg"></span>
     <button id="tundo" type="button"></button>
+    <button id="tclose" class="mini" type="button"></button>
   </div>
   <dialog id="finddlg" class="sheet" aria-labelledby="findtitle">
     <h2 id="findtitle"></h2>
@@ -156,6 +162,11 @@
       <h2 id="dtitle"></h2>
       <input id="dtext" required maxlength="120" autocomplete="off" aria-labelledby="dtitle">
       <div id="dcolors" class="colors" role="radiogroup" hidden></div>
+      <div id="dmove" class="drow" hidden>
+        <button id="dup" type="button"></button>
+        <button id="ddown" type="button"></button>
+        <button id="dtop" type="button"></button>
+      </div>
       <div class="drow">
         <button id="dsave" class="primary" value="save"></button>
         <button id="ddel" value="delete" formnovalidate></button>

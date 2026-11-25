@@ -34,6 +34,7 @@ const T = {
     aiLabel: 'AI suggestions', aiAsk: 'Turn on AI suggestions?', aiYes: 'Turn on', aiNo: 'Not now',
     aiBody: 'What you type is sent to Google Gemini so it can suggest better completions. TapTalk does not store it. Turn it off any time with the AI button.',
     aiFail: 'AI is unavailable right now. Built-in suggestions are still working.',
+    sprev: 'Previous suggestions', snext: 'More suggestions', speaking: 'Speaking', results: 'results', moveUp: 'Move up', moveDown: 'Move down', toTop: 'Move to top',
     findLabel: 'Search', findPh: 'Search phrases, symbols and words', noResults: 'Nothing found', addToSentence: 'Add to sentence',
     src: { fav: 'Favorite', sit: 'Situation', sym: 'Symbol', word: 'My word', hist: 'Spoken' },
     quickLabel: 'Quick phrases', setLabel: 'Settings', close: 'Close', emoLabel: 'Voice feeling', emoTitle: 'How should it sound?',
@@ -61,6 +62,7 @@ const T = {
     aiLabel: 'AI सुझाव', aiAsk: 'AI सुझाव चालू करें?', aiYes: 'चालू करें', aiNo: 'अभी नहीं',
     aiBody: 'आप जो लिखते हैं वह बेहतर सुझावों के लिए Google Gemini को भेजा जाता है। TapTalk इसे सहेजता नहीं है। AI बटन से कभी भी बंद कर सकते हैं।',
     aiFail: 'AI अभी उपलब्ध नहीं है। सामान्य सुझाव काम कर रहे हैं।',
+    sprev: 'पिछले सुझाव', snext: 'और सुझाव', speaking: 'बोल रहा है', results: 'परिणाम', moveUp: 'ऊपर करें', moveDown: 'नीचे करें', toTop: 'सबसे ऊपर',
     findLabel: 'खोजें', findPh: 'वाक्य, प्रतीक और शब्द खोजें', noResults: 'कुछ नहीं मिला', addToSentence: 'वाक्य में जोड़ें',
     src: { fav: 'पसंदीदा', sit: 'स्थिति', sym: 'प्रतीक', word: 'मेरा शब्द', hist: 'बोला गया' },
     quickLabel: 'तुरंत बोलें', setLabel: 'सेटिंग', close: 'बंद करें', emoLabel: 'आवाज़ का भाव', emoTitle: 'आवाज़ कैसी हो?',
@@ -248,7 +250,7 @@ function toast(message, undo) {
   }
   $('toast').hidden = false
   clearTimeout(toastTimer)
-  toastTimer = setTimeout(() => ($('toast').hidden = true), 6000)
+  if (!undo) toastTimer = setTimeout(() => ($('toast').hidden = true), 8000)
 }
 
 function removeAt(list, i, save) {
@@ -318,7 +320,18 @@ async function natural(text, l, id, emo) {
   source.start()
 }
 
+function stopAll() {
+  speakId++
+  stopWave()
+  try {
+    source?.stop()
+  } catch {}
+  if ('speechSynthesis' in window) speechSynthesis.cancel()
+  $('sr').textContent = ''
+}
+
 function say(str, host, src = 'tap', emoOverride) {
+  if (host && speaking?.host === host) return stopAll()
   stopWave()
   try {
     source?.stop()
@@ -338,6 +351,7 @@ function say(str, host, src = 'tap', emoOverride) {
   }
   speaking = { host, wave }
   $('mascot').classList.add('talking')
+  $('sr').textContent = `${T[lang].speaking}: ${str}`
   if (voiceOn) {
     audioCtx ??= new AudioContext()
     audioCtx.resume()
@@ -481,6 +495,7 @@ function favRow() {
   const cards = favs.slice(0, 5).map((f, i) => {
     const b = button('', () => say(f, b, 'favorite'), 'favcard sun')
     b.dataset.i = i
+    b.title = f
     b.lang = isDeva(f) ? 'hi' : 'en'
     b.append(el('span', 'clamp', f))
     return b
@@ -708,7 +723,7 @@ function delWord() {
 
 function speak() {
   let said = ta.value.trim()
-  if (!said) return
+  if (!said) return speaking ? stopAll() : undefined
   if (lang === 'hi') said = toDevanagari(said)
   say(said, $('speak'), 'typed')
   history.push({ t: said, at: Date.now(), l: lang })
@@ -743,6 +758,24 @@ function ask(title, value, canDelete, opts = {}) {
   $('ddel').textContent = t.remove
   $('dcancel').textContent = t.cancel
   $('ddel').hidden = !canDelete
+  $('dmove').hidden = !opts.move
+  if (opts.move) {
+    $('dup').textContent = t.moveUp
+    $('ddown').textContent = t.moveDown
+    $('dtop').textContent = t.toTop
+    const move = to => {
+      const { list, i, save } = opts.move
+      const [item] = list.splice(i, 1)
+      list.splice(to === 'up' ? Math.max(0, i - 1) : to === 'down' ? Math.min(list.length, i + 1) : 0, 0, item)
+      save()
+      build()
+      renderAll()
+      dlg.close('moved')
+    }
+    $('dup').onclick = () => move('up')
+    $('ddown').onclick = () => move('down')
+    $('dtop').onclick = () => move('top')
+  }
   const colors = $('dcolors')
   colors.hidden = !opts.color
   if (opts.color) {
@@ -773,7 +806,7 @@ function ask(title, value, canDelete, opts = {}) {
 }
 
 async function edit(list, save, title, i) {
-  const r = await ask(title, i < 0 ? '' : list[i], i >= 0)
+  const r = await ask(title, i < 0 ? '' : list[i], i >= 0, { move: i >= 0 ? { list, i, save } : null })
   if (!r) return
   if (r.action === 'delete') list.splice(i, 1)
   else if (i < 0) {
@@ -865,6 +898,11 @@ function sortable(root, get) {
 function setLang(l) {
   lang = l
   const t = T[l]
+  document.documentElement.lang = l
+  $('th').textContent = t.tabs[0]
+  $('tclose').setAttribute('aria-label', t.close)
+  $('sprev').setAttribute('aria-label', t.sprev)
+  $('snext').setAttribute('aria-label', t.snext)
   ta.lang = l
   ta.placeholder = t.ph
   $('speak').querySelector('.lbl').textContent = t.speak
@@ -895,6 +933,8 @@ function setLang(l) {
   renderAll()
 }
 
+$('tclose').innerHTML = svg(ICON.close)
+$('tclose').onclick = () => ($('toast').hidden = true)
 $('sitedit').innerHTML = svg(ICON.pencil)
 $('sitdel').innerHTML = svg(ICON.trash)
 $('sitedit').onclick = () => editSit(allSits().find(s => s.id === sit))
@@ -983,8 +1023,10 @@ function renderFind() {
   const hits = search(lang === 'hi' ? [q, toDevanagari(q)] : [q], pools())
   if (!hits.length) {
     $('findres').replaceChildren(...(q.trim() ? [el('p', '', T[lang].noResults)] : []))
+    $('sr').textContent = q.trim() ? T[lang].noResults : ''
     return
   }
+  $('sr').textContent = `${hits.length} ${T[lang].results}`
   $('findres').replaceChildren(...hits.map(h => {
     const row = el('div', 'res')
     const b = button('', () => say(h.say, b, 'search'), `card-say ${h.tone}`)
@@ -1239,6 +1281,9 @@ sortable($('favrow'), () => ({ list: favs, save: saveFavs }))
 sortable($('namegrid'), () => ({ list: names, save: saveNames }))
 sortable($('sitgrid'), () => ({ list: ownOf(allSits().find(s => s.id === sit)), save: saveSits }))
 
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && speaking && !document.querySelector('dialog[open]')) stopAll()
+})
 document.addEventListener('pointerdown', e => {
   if (e.target.closest('button')) navigator.vibrate?.(8)
 }, true)

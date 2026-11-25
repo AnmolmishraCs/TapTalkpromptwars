@@ -98,7 +98,7 @@ The layout reflows: stacked in portrait, two columns in landscape, and compact w
 ## Run, test, deploy
 
 ```bash
-npm test          # 47 unit tests, no install needed
+npm test          # 52 unit tests, no install needed
 npm start         # http://localhost:8080
 npm run bench     # the evaluation above
 ```
@@ -111,7 +111,32 @@ gcloud run deploy taptalk --source . --region asia-south1 --allow-unauthenticate
 
 ## Accessibility
 
-Large touch targets, high contrast, visible keyboard focus, labels for screen readers, reduced-motion support, hidden pages are not focusable, the device keyboard (including Hindi) and voice typing work, and layouts for portrait and landscape.
+TapTalk targets **WCAG 2.2 level AA**. This matters most here, because the people using it may have motor, vision, hearing or cognitive disabilities. Checked with automated scripts (a real browser run over every page and dialog) and the unit tests in `test/a11y.test.js`. Not yet tested on real screen readers or with a formal audit.
+
+| WCAG criterion | What TapTalk does |
+|---|---|
+| 1.1.1 Non-text content | Icons are decorative (`aria-hidden`) and every icon-only button has a text name |
+| 1.3.1 Info and relationships, 2.4.6 Headings | One `h1`, an `h2` per page (including a hidden one for Talk), `main`, `header` and `nav` landmarks, labelled dialogs |
+| 1.3.4 Orientation | Works in portrait and landscape |
+| 1.4.1 Use of color | State is never color only: selected items are black with a tick, speaking tiles also show moving bars, situations have names |
+| 1.4.3 Contrast (minimum) | All text is at least 4.5:1, checked by a test and by the browser audit; text on the pastel cards is about 10:1 |
+| 1.4.4 Resize text, 1.4.10 Reflow | No horizontal scrolling at 320px wide or at 200% text size; zoom is never blocked |
+| 1.4.11 Non-text contrast | Text-field borders are at least 3:1; focus rings are a black outline with a white halo |
+| 1.4.12 Text spacing | No text is clipped when line, letter and word spacing are increased |
+| 2.1.1 Keyboard, 2.1.2 No keyboard trap | Everything works with a keyboard; hidden pages are not focusable; dialogs trap focus and close with Escape |
+| 2.4.1 Bypass blocks | "Skip to content" link |
+| 2.2.1 Timing adjustable | The Undo message stays until the person dismisses it; it does not disappear on a timer |
+| 2.4.3 Focus order, 2.4.7 Focus visible, 2.4.11 Focus not obscured | Logical order; visible focus on every control; pages keep room under the floating bars so a focused item is not hidden |
+| 2.5.1, 2.5.7 Dragging | Reordering by hold and drag also has a button alternative: open the pencil on any item and use Move up, Move down or To top |
+| 2.5.2 Pointer cancellation, 2.5.8 Target size | Actions happen on release; every button is at least 36 by 36 pixels |
+| 3.1.1, 3.1.2 Language | The page language switches between English and Hindi, and Hindi phrases are marked as Hindi |
+| 3.2.3, 3.2.4 Consistent | Same controls in the same places, with the same names |
+| 4.1.2 Name, role, value | Toggles use `aria-pressed`; the current page uses `aria-current` |
+| 4.1.3 Status messages | Speaking, search results, selection counts, Undo and errors are announced through live regions |
+
+Also: a spoken message can be stopped by tapping it again, pressing Speak with an empty box, or pressing Escape; animation respects the reduced-motion setting; voice speed, voice feeling and big keys help people with different motor and communication needs.
+
+Known limits: not tested with TalkBack, VoiceOver or NVDA on devices; the browser's own on-screen keyboard is outside our control; phone voices vary in quality and Hindi voices may need to be installed.
 
 ## Security
 
